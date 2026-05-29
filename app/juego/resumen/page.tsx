@@ -1,5 +1,6 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -29,6 +30,19 @@ const HOYOS = [
   { hole_number: 18, par: 3, si: 11 },
 ]
 
+interface HoyoDetalle {
+  hole_number: number
+  par: number
+  si: number
+  s1: any
+  s2: any
+  net1?: number
+  net2?: number
+  v?: number
+  ganador?: string | null
+  acumulado?: number | null
+}
+
 export default function ResumenPage() {
   const [scores, setScores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,7 +54,6 @@ export default function ResumenPage() {
         .select('*')
         .eq('game_round_id', GAME_ROUND_ID)
         .order('hole_number')
-
       setScores(data || [])
       setLoading(false)
     }
@@ -57,7 +70,6 @@ export default function ResumenPage() {
     </div>
   )
 
-  // Calcular marcador
   const hcpDiff = Math.abs(J1.hcp - J2.hcp)
   const jugadorConVentaja = J1.hcp > J2.hcp ? J1 : J2
 
@@ -73,10 +85,8 @@ export default function ResumenPage() {
   let holesHalved = 0
   let totalBrutoJ1 = 0
   let totalBrutoJ2 = 0
-  let totalNetoJ1 = 0
-  let totalNetoJ2 = 0
 
-  const detalleHoyos = HOYOS.map(h => {
+  const detalleHoyos: HoyoDetalle[] = HOYOS.map(h => {
     const s1 = scores.find(s => s.player_id === J1.id && s.hole_number === h.hole_number)
     const s2 = scores.find(s => s.player_id === J2.id && s.hole_number === h.hole_number)
 
@@ -88,8 +98,6 @@ export default function ResumenPage() {
 
     totalBrutoJ1 += s1.gross_score
     totalBrutoJ2 += s2.gross_score
-    totalNetoJ1 += net1
-    totalNetoJ2 += net2
 
     let ganador = null
     if (net1 < net2) { acumulado++; holesWonJ1++; ganador = 'j1' }
@@ -110,12 +118,8 @@ export default function ResumenPage() {
   const marcadorColor = acumulado === 0 ? '#2ECC71' : acumulado > 0 ? J1.color : J2.color
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#0a1a0f',
-      fontFamily: 'Georgia, serif',
-      color: '#e8f5e9',
-    }}>
+    <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9' }}>
+
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #1a3a1f 0%, #0d2410 100%)',
@@ -157,14 +161,12 @@ export default function ResumenPage() {
             Match Play Singles — Club Las Misiones
           </div>
 
-          {/* Jugadores */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ textAlign: 'center', flex: 1 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: '50%',
                 background: J1.color + '33', border: `2px solid ${J1.color}`,
-                margin: '0 auto 8px', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 20,
+                margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
               }}>🏌️</div>
               <div style={{ fontWeight: 'bold', fontSize: 14 }}>{J1.nombre}</div>
               <div style={{ fontSize: 12, color: '#81c784' }}>HCP {J1.hcp}</div>
@@ -182,24 +184,20 @@ export default function ResumenPage() {
                   🏆 {ganadorFinal.nombre}
                 </div>
               )}
-              {!ganadorFinal && (
-                <div style={{ fontSize: 12, color: '#81c784' }}>Empate</div>
-              )}
+              {!ganadorFinal && <div style={{ fontSize: 12, color: '#81c784' }}>Empate</div>}
             </div>
 
             <div style={{ textAlign: 'center', flex: 1 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: '50%',
                 background: J2.color + '33', border: `2px solid ${J2.color}`,
-                margin: '0 auto 8px', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 20,
+                margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
               }}>🏌️</div>
               <div style={{ fontWeight: 'bold', fontSize: 14 }}>{J2.nombre}</div>
               <div style={{ fontSize: 12, color: '#81c784' }}>HCP {J2.hcp}</div>
             </div>
           </div>
 
-          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             {[
               { label: 'Hoyos ganados', v1: holesWonJ1, v2: holesWonJ2, c1: J1.color, c2: J2.color },
@@ -272,7 +270,9 @@ export default function ResumenPage() {
                       <td style={{ padding: '5px 6px', textAlign: 'center', color: '#4a7a50' }}>{h.si}</td>
                       <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 'bold' }}>
                         {h.s1.gross_score}
-                        {h.v > 0 && jugadorConVentaja.id === J1.id && <sup style={{ color: '#2ECC71', fontSize: 8 }}>+{h.v}</sup>}
+                        {(h.v || 0) > 0 && jugadorConVentaja.id === J1.id && (
+                          <sup style={{ color: '#2ECC71', fontSize: 8 }}>+{h.v}</sup>
+                        )}
                       </td>
                       <td style={{ padding: '5px 6px', textAlign: 'center', color: J1.color, fontSize: 11 }}>{h.net1}</td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
@@ -283,11 +283,13 @@ export default function ResumenPage() {
                       <td style={{ padding: '5px 6px', textAlign: 'center', color: J2.color, fontSize: 11 }}>{h.net2}</td>
                       <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 'bold' }}>
                         {h.s2.gross_score}
-                        {h.v > 0 && jugadorConVentaja.id === J2.id && <sup style={{ color: '#2ECC71', fontSize: 8 }}>+{h.v}</sup>}
+                        {(h.v || 0) > 0 && jugadorConVentaja.id === J2.id && (
+                          <sup style={{ color: '#2ECC71', fontSize: 8 }}>+{h.v}</sup>
+                        )}
                       </td>
                       <td style={{ padding: '5px 6px', textAlign: 'center' }}>
-                        <span style={{ color: h.acumulado === 0 ? '#2ECC71' : h.acumulado > 0 ? J1.color : J2.color, fontWeight: 'bold', fontSize: 11 }}>
-                          {h.acumulado === 0 ? 'AS' : `${Math.abs(h.acumulado)} UP`}
+                        <span style={{ color: h.acumulado === 0 ? '#2ECC71' : (h.acumulado || 0) > 0 ? J1.color : J2.color, fontWeight: 'bold', fontSize: 11 }}>
+                          {h.acumulado === 0 ? 'AS' : `${Math.abs(h.acumulado || 0)} UP`}
                         </span>
                       </td>
                     </tr>
