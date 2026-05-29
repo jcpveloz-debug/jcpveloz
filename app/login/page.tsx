@@ -26,7 +26,7 @@ export default function LoginPage() {
       const data = await response.json()
       
       if (data.access_token) {
-        window.location.href = '/dashboard'
+    window.location.replace('/dashboard')
       } else {
         setMensaje('Email o contraseña incorrectos')
       }
