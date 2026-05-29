@@ -25,11 +25,13 @@ export default function LoginPage() {
       
       const data = await response.json()
       
-      if (data.access_token) {
-    window.location.replace('/dashboard')
-      } else {
-        setMensaje('Email o contraseña incorrectos')
-      }
+if (data.access_token) {
+  alert('Login exitoso!')
+  window.location.replace('/dashboard')
+} else {
+  alert('Error: ' + JSON.stringify(data))
+  setMensaje('Email o contraseña incorrectos')
+}
       
     } catch(e: any) {
       setMensaje('Error: ' + e.message)
