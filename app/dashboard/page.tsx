@@ -2,10 +2,16 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function DashboardPage() {
   const [user] = useState({ email: 'jugador@golf.com', user_metadata: { full_name: 'Bienvenido' } })
+
+  function compartirWhatsApp() {
+    const url = 'https://kriter-golf-club.vercel.app'
+    const texto = `⛳ Únete a Kriter Golf Club!\n\nEntra directo aquí:\n${url}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank')
+  }
 
   return (
     <div style={{
@@ -28,13 +34,23 @@ export default function DashboardPage() {
           </div>
           <div style={{ fontSize: 20, fontWeight: 'bold' }}>Dashboard</div>
         </div>
-        <button onClick={() => window.location.replace('/login')} style={{
-          background: 'transparent', border: '1px solid #2ECC71',
-          borderRadius: 8, color: '#2ECC71', padding: '8px 16px',
-          cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
-        }}>
-          Cerrar Sesión
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={compartirWhatsApp} style={{
+            background: '#25D366', border: 'none',
+            borderRadius: 8, color: '#fff',
+            padding: '8px 14px', cursor: 'pointer',
+            fontSize: 12, fontFamily: 'Georgia, serif', fontWeight: 'bold',
+          }}>
+            📲 WhatsApp
+          </button>
+          <button onClick={() => window.location.replace('/login')} style={{
+            background: 'transparent', border: '1px solid #2ECC71',
+            borderRadius: 8, color: '#2ECC71', padding: '8px 14px',
+            cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
+          }}>
+            Cerrar Sesión
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '24px 16px' }}>
