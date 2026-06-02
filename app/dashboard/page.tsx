@@ -71,9 +71,10 @@ export default function DashboardPage() {
           Menú Principal
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[
             { icon: '⛳', label: 'Nuevo Juego', desc: 'Iniciar una ronda', href: '/juego/nuevo' },
+            { icon: '📊', label: 'Leaderboard', desc: 'Matches Fourball de hoy', href: '/leaderboard-fourball' },
             { icon: '📋', label: 'Mis Juegos', desc: 'Historial de rondas', href: '/juegos' },
             { icon: '👥', label: 'Jugadores', desc: 'Gestionar jugadores', href: '/jugadores' },
             { icon: '🏆', label: 'Resultados', desc: 'Ver marcadores', href: '/resultados' },
