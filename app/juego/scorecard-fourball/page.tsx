@@ -337,8 +337,21 @@ export default function ScorecardFourballPage() {
               flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#2ECC71', color: '#0a1a0f',
               cursor: hoyoActivo === hoyos.length - 1 ? 'not-allowed' : 'pointer', opacity: hoyoActivo === hoyos.length - 1 ? 0.5 : 1, fontSize: 13, fontWeight: 'bold',
             }}>Siguiente →</button>
-          </div>
+</div>
         </div>
+
+        {jugados === hoyos.length && hoyos.length > 0 && (
+          <button
+            onClick={() => window.location.href = `/juego/resumen-fourball?game=${gameId}`}
+            style={{
+              width: '100%', marginBottom: 16, background: '#F39C12', color: '#0a1a0f',
+              border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer',
+              fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
+            }}
+          >
+            🏆 Ver Resumen Final
+          </button>
+        )}
 
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '14px', border: '1px solid #2ECC7122' }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: '#81c784', textTransform: 'uppercase', marginBottom: 10 }}>Marcador (mejor bola de cada pareja)</div>
