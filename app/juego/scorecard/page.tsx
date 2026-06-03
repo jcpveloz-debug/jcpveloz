@@ -53,6 +53,7 @@ function calcularVentajas(hcpDiff: number) {
 
 export default function ScorecardPage() {
   const [hoyoActivo, setHoyoActivo] = useState(0)
+  const [esAdmin, setEsAdmin] = useState(false)
   const [scores, setScores] = useState<Record<string, Record<number, string>>>({
     j1: Object.fromEntries(HOYOS.map(h => [h.hole_number, ''])),
     j2: Object.fromEntries(HOYOS.map(h => [h.hole_number, ''])),
@@ -61,7 +62,12 @@ export default function ScorecardPage() {
   const [guardado, setGuardado] = useState<Record<string, Record<number, boolean>>>({
     j1: {}, j2: {}
   })
-useEffect(() => {
+
+  useEffect(() => {
+    // leer modo admin de la URL
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('admin') === '1') setEsAdmin(true)
+
     async function cargarScores() {
       const { data } = await supabase
         .from('hole_scores')
@@ -82,12 +88,14 @@ useEffect(() => {
     }
     cargarScores()
   }, [])
+
+  const adminSuffix = esAdmin ? '?admin=1' : ''
   const hcpDiff = Math.abs(J1.hcp - J2.hcp)
   const jugadorConVentaja = J1.hcp > J2.hcp ? 'j1' : 'j2'
   const ventajas = calcularVentajas(hcpDiff)
   const hoyo = HOYOS[hoyoActivo]
 
-async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore: string) {
+  async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore: string) {
     if (grossScore === '') return
     setGuardando(true)
 
@@ -118,6 +126,7 @@ async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore
     }))
     setGuardando(false)
   }
+
   function updateScore(jugador: 'j1' | 'j2', valor: string) {
     setScores(prev => ({
       ...prev,
@@ -209,6 +218,15 @@ async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore
         </div>
       </div>
 
+      {/* Etiqueta de modo */}
+      <div style={{
+        background: esAdmin ? '#2ECC7122' : '#F39C1222',
+        color: esAdmin ? '#2ECC71' : '#F39C12',
+        textAlign: 'center', padding: '6px', fontSize: 12, letterSpacing: 1,
+      }}>
+        {esAdmin ? '✏️ Modo Edición' : '👁️ Modo Solo Lectura — no se puede capturar'}
+      </div>
+
       <div style={{ padding: '16px 16px 80px' }}>
 
         {/* Selector de hoyos */}
@@ -277,6 +295,7 @@ async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore
                     type="number" min={1} max={15}
                     value={scores[jk][hoyo.hole_number]}
                     onChange={e => updateScore(jk, e.target.value)}
+                    disabled={!esAdmin}
                     placeholder={`Par ${hoyo.par}`}
                     style={{
                       width: '100%', background: '#162a1a',
@@ -284,6 +303,7 @@ async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore
                       color: '#e8f5e9', fontFamily: 'Georgia, serif',
                       fontSize: 24, fontWeight: 'bold', textAlign: 'center',
                       padding: '10px 0', boxSizing: 'border-box',
+                      opacity: esAdmin ? 1 : 0.6,
                     }}
                   />
                   {net !== null && (
@@ -296,8 +316,8 @@ async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore
             })}
           </div>
 
-          {/* Botón guardar */}
-          {ambosCapturados && (
+          {/* Botón guardar — solo en modo admin */}
+          {esAdmin && ambosCapturados && (
             <button
               onClick={async () => {
                 await guardarScore('j1', hoyo.hole_number, scores.j1[hoyo.hole_number])
@@ -332,26 +352,28 @@ async function guardarScore(jugador: 'j1' | 'j2', holeNumber: number, grossScore
             }}>Siguiente →</button>
           </div>
         </div>
-{hoyosJugados === 18 && (
-  <button
-    onClick={() => window.location.href = '/juego/resumen'}
-    style={{
-      width: '100%',
-      marginTop: 10,
-      background: '#F39C12',
-      color: '#0a1a0f',
-      border: 'none',
-      borderRadius: 8,
-      padding: '12px',
-      cursor: 'pointer',
-      fontFamily: 'Georgia, serif',
-      fontSize: 14,
-      fontWeight: 'bold',
-    }}
-  >
-    🏆 Ver Resumen Final
-  </button>
-)}
+
+        {hoyosJugados === 18 && (
+          <button
+            onClick={() => window.location.href = '/juego/resumen' + adminSuffix}
+            style={{
+              width: '100%',
+              marginTop: 10,
+              background: '#F39C12',
+              color: '#0a1a0f',
+              border: 'none',
+              borderRadius: 8,
+              padding: '12px',
+              cursor: 'pointer',
+              fontFamily: 'Georgia, serif',
+              fontSize: 14,
+              fontWeight: 'bold',
+            }}
+          >
+            🏆 Ver Resumen Final
+          </button>
+        )}
+
         {/* Marcador hoyo por hoyo */}
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '14px', border: '1px solid #2ECC7122' }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: '#81c784', textTransform: 'uppercase', marginBottom: 10 }}>

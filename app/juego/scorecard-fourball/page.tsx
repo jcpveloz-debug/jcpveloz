@@ -34,6 +34,7 @@ function leerGameId(): string | null {
 
 export default function ScorecardFourballPage() {
   const [gameId, setGameId] = useState<string | null>(null)
+  const [esAdmin, setEsAdmin] = useState(false)
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,6 +45,8 @@ export default function ScorecardFourballPage() {
   useEffect(() => {
     const id = leerGameId()
     setGameId(id)
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('admin') === '1') setEsAdmin(true)
 
     async function cargar() {
       if (!id) { setLoading(false); return }
@@ -103,6 +106,8 @@ export default function ScorecardFourballPage() {
     }
     cargar()
   }, [])
+
+  const adminSuffix = esAdmin ? '&admin=1' : ''
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2ECC71', fontFamily: 'Georgia, serif', fontSize: 18 }}>
@@ -224,11 +229,13 @@ export default function ScorecardFourballPage() {
           type="number" min={1} max={15}
           value={g}
           onChange={e => updateScore(j.id, e.target.value)}
+          disabled={!esAdmin}
           placeholder={`Par ${hoyo.par}`}
           style={{
             width: '100%', background: '#162a1a', border: `1px solid ${colorPareja}44`,
             borderRadius: 8, color: '#e8f5e9', fontFamily: 'Georgia, serif',
             fontSize: 22, fontWeight: 'bold', textAlign: 'center', padding: '8px 0', boxSizing: 'border-box',
+            opacity: esAdmin ? 1 : 0.6,
           }}
         />
         {net !== null && (
@@ -265,6 +272,15 @@ export default function ScorecardFourballPage() {
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: colorB }} />
           </div>
         </div>
+      </div>
+
+      {/* Etiqueta de modo */}
+      <div style={{
+        background: esAdmin ? '#2ECC7122' : '#F39C1222',
+        color: esAdmin ? '#2ECC71' : '#F39C12',
+        textAlign: 'center', padding: '6px', fontSize: 12, letterSpacing: 1,
+      }}>
+        {esAdmin ? '✏️ Modo Edición' : '👁️ Modo Solo Lectura — no se puede capturar'}
       </div>
 
       <div style={{ padding: '16px 16px 80px' }}>
@@ -318,7 +334,7 @@ export default function ScorecardFourballPage() {
             })}
           </div>
 
-          {todosCapturados && (
+          {esAdmin && todosCapturados && (
             <button onClick={guardarHoyo} disabled={guardando} style={{
               width: '100%', marginTop: 12, background: guardando ? '#4a7a50' : '#2ECC71',
               color: '#0a1a0f', border: 'none', borderRadius: 8, padding: '10px',
@@ -337,12 +353,12 @@ export default function ScorecardFourballPage() {
               flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#2ECC71', color: '#0a1a0f',
               cursor: hoyoActivo === hoyos.length - 1 ? 'not-allowed' : 'pointer', opacity: hoyoActivo === hoyos.length - 1 ? 0.5 : 1, fontSize: 13, fontWeight: 'bold',
             }}>Siguiente →</button>
-</div>
+          </div>
         </div>
 
         {jugados === hoyos.length && hoyos.length > 0 && (
           <button
-            onClick={() => window.location.href = `/juego/resumen-fourball?game=${gameId}`}
+            onClick={() => window.location.href = `/juego/resumen-fourball?game=${gameId}${adminSuffix}`}
             style={{
               width: '100%', marginBottom: 16, background: '#F39C12', color: '#0a1a0f',
               border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer',

@@ -30,6 +30,7 @@ export default function NuevoJuegoPage() {
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  const [esAdmin, setEsAdmin] = useState(false)
 
   // Singles
   const [jugador1, setJugador1] = useState<string | null>(null)
@@ -41,6 +42,10 @@ export default function NuevoJuegoPage() {
   const [parejaB, setParejaB] = useState<string[]>([])
 
   useEffect(() => {
+    // leer modo admin de la URL
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('admin') === '1') setEsAdmin(true)
+
     async function cargar() {
       setLoading(true)
       const { data: pData } = await supabase
@@ -62,6 +67,8 @@ export default function NuevoJuegoPage() {
     }
     cargar()
   }, [])
+
+  const adminSuffix = esAdmin ? '?admin=1' : ''
 
   // ---- helpers selección Fourball ----
   function toggleSeleccion(id: string) {
@@ -99,6 +106,11 @@ export default function NuevoJuegoPage() {
 
   // ---- crear juego ----
   async function handleArrancar() {
+    // CONTROL DE MODO: solo crea el juego si eres admin
+    if (!esAdmin) {
+      alert('👁️ Estás en modo solo lectura.\n\nPara crear juegos, el organizador debe activar el modo edición con su PIN desde el Dashboard.')
+      return
+    }
     setGuardando(true)
     try {
       const { data: ronda, error: e1 } = await supabase
@@ -133,9 +145,9 @@ export default function NuevoJuegoPage() {
       const { error: e2 } = await supabase.from('game_round_players').insert(filas)
       if (e2) throw e2
 
-      // pasamos el id del juego al scorecard por la URL
-    const ruta = formato === 'match_fourball' ? '/juego/scorecard-fourball' : '/juego/scorecard'
-window.location.href = `${ruta}?game=${ronda.id}`
+      // pasamos el id del juego al scorecard por la URL (manteniendo modo admin)
+      const ruta = formato === 'match_fourball' ? '/juego/scorecard-fourball' : '/juego/scorecard'
+      window.location.href = `${ruta}?game=${ronda.id}&admin=1`
     } catch (err: any) {
       alert('Error al crear el juego: ' + (err?.message || err))
       setGuardando(false)
@@ -164,9 +176,18 @@ window.location.href = `${ruta}?game=${ronda.id}`
           <div style={{ fontSize: 11, letterSpacing: 4, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 4 }}>Kriter Golf Club</div>
           <div style={{ fontSize: 20, fontWeight: 'bold' }}>⛳ Nuevo Juego</div>
         </div>
-        <button onClick={() => window.location.href = '/dashboard'} style={{ background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71', padding: '8px 16px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif' }}>
+        <button onClick={() => window.location.href = '/dashboard' + adminSuffix} style={{ background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71', padding: '8px 16px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif' }}>
           ← Dashboard
         </button>
+      </div>
+
+      {/* Etiqueta de modo */}
+      <div style={{
+        background: esAdmin ? '#2ECC7122' : '#F39C1222',
+        color: esAdmin ? '#2ECC71' : '#F39C12',
+        textAlign: 'center', padding: '6px', fontSize: 12, letterSpacing: 1,
+      }}>
+        {esAdmin ? '✏️ Modo Edición' : '👁️ Modo Solo Lectura — no se podrá crear el juego'}
       </div>
 
       {/* Pasos */}
@@ -189,7 +210,6 @@ window.location.href = `${ruta}?game=${ronda.id}`
               <div style={{ fontSize: 12, color: '#81c784', marginTop: 4 }}>Monterrey, Nuevo León</div>
             </div>
 
-            {/* Formato: ahora con Fourball */}
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7122', marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: '#81c784', marginBottom: 8 }}>FORMATO</div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -246,7 +266,6 @@ window.location.href = `${ruta}?game=${ronda.id}`
               {formato === 'match_singles' ? 'Paso 2 — Selecciona los Jugadores' : 'Paso 2 — Selecciona 4 Jugadores'}
             </div>
 
-            {/* SINGLES */}
             {formato === 'match_singles' && (
               <>
                 <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7133', marginBottom: 12 }}>
@@ -287,7 +306,6 @@ window.location.href = `${ruta}?game=${ronda.id}`
               </>
             )}
 
-            {/* FOURBALL */}
             {formato === 'match_fourball' && (
               <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7133', marginBottom: 20 }}>
                 <div style={{ fontSize: 11, color: '#2ECC71', marginBottom: 10, letterSpacing: 2 }}>
@@ -337,7 +355,6 @@ window.location.href = `${ruta}?game=${ronda.id}`
               {formato === 'match_singles' ? 'Paso 3 — Confirmación' : 'Paso 3 — Arma las Parejas'}
             </div>
 
-            {/* SINGLES: confirmación simple */}
             {formato === 'match_singles' && jugador1 && jugador2 && (
               <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '20px', border: '1px solid #2ECC7133', marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -354,7 +371,6 @@ window.location.href = `${ruta}?game=${ronda.id}`
               </div>
             )}
 
-            {/* FOURBALL: armado de parejas */}
             {formato === 'match_fourball' && (
               <>
                 <div style={{ fontSize: 12, color: '#81c784', marginBottom: 12 }}>
@@ -400,7 +416,6 @@ window.location.href = `${ruta}?game=${ronda.id}`
               </>
             )}
 
-            {/* Info común */}
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '14px 16px', border: '1px solid #2ECC7122', marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 12, color: '#81c784' }}>Formato</span>
