@@ -246,13 +246,11 @@ export default function TarjetaStrokePage() {
                       const g = getScore(j.id, h.hole_number)
                       const v = ventajaEnHoyo(j.hcp, h.si)
                       const n = netoHoyo(j, h)
-                      return (
-                        <td key={h.hole_number} style={{ padding: '4px 4px', textAlign: 'center' }}>
+return (
+                        <td key={h.hole_number} style={{ padding: '4px 0', textAlign: 'center', borderLeft: '1px solid #2ECC7122' }}>
                           <div onClick={() => abrirPanel(j.id, h.hole_number)} style={{
-                            width: 40, minHeight: 40, margin: '0 auto', padding: '3px 0',
-                            border: `1px solid ${g !== '' ? '#2ECC71' : '#2ECC7144'}`,
-                            borderRadius: 8, cursor: esAdmin ? 'pointer' : 'default',
-                            background: g !== '' ? '#0d2410' : 'transparent', position: 'relative',
+                            width: 42, minHeight: 40, margin: '0 auto', padding: '3px 0',
+                            cursor: esAdmin ? 'pointer' : 'default', position: 'relative',
                           }}>
                             <div style={{ fontSize: 16, fontWeight: 'bold', color: g !== '' ? '#e8f5e9' : '#4a7a50', lineHeight: '18px' }}>
                               {g !== '' ? g : '–'}
@@ -262,7 +260,7 @@ export default function TarjetaStrokePage() {
                                 {fmtNeto(n)}
                               </div>
                             )}
-                            {v > 0 && (<span style={{ position: 'absolute', top: 3, right: 4, width: 4, height: 4, borderRadius: '50%', background: '#F39C12' }} />)}
+                            {v > 0 && (<span style={{ position: 'absolute', top: 3, right: 6, width: 4, height: 4, borderRadius: '50%', background: '#F39C12' }} />)}
                           </div>
                         </td>
                       )

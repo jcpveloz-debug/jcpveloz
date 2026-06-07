@@ -13,6 +13,23 @@ interface Jugador {
 }
 interface Hoyo { hole_number: number; par: number; si: number }
 
+function ventajaEnHoyo(hcp: number, si: number) {
+  const vueltas = Math.floor(hcp / 18)
+  const residuo = hcp % 18
+  return vueltas + (si <= residuo ? 1 : 0)
+}
+
+function fmtNeto(n: number): string {
+  if (n === 0) return 'E'
+  if (n > 0) return '+' + n
+  return String(n)
+}
+function colorNeto(n: number): string {
+  if (n < 0) return '#2ECC71'
+  if (n === 0) return '#F39C12'
+  return '#e8f5e9'
+}
+
 function leerGameId(): string | null {
   if (typeof window === 'undefined') return null
   return new URLSearchParams(window.location.search).get('game')
@@ -22,7 +39,7 @@ export default function ResumenStrokePage() {
   const [gameId, setGameId] = useState<string | null>(null)
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
-  const [scores, setScores] = useState<Record<string, Record<number, number>>>({})
+  const [scores, setScores] = useState<Record<string, Record<number, string>>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,17 +75,18 @@ export default function ResumenStrokePage() {
       }
       setJugadores(jugs)
 
+      const init: Record<string, Record<number, string>> = {}
+      jugs.forEach(j => { init[j.id] = {} })
       const { data: sData } = await supabase
         .from('hole_scores')
         .select('player_id, hole_number, gross_score')
         .eq('game_round_id', id)
-
-      const sc: Record<string, Record<number, number>> = {}
       sData?.forEach(s => {
-        if (!sc[s.player_id]) sc[s.player_id] = {}
-        sc[s.player_id][s.hole_number] = s.gross_score
+        if (init[s.player_id] && s.gross_score !== null && s.gross_score !== undefined) {
+          init[s.player_id][s.hole_number] = String(s.gross_score)
+        }
       })
-      setScores(sc)
+      setScores(init)
       setLoading(false)
     }
     cargar()
@@ -87,26 +105,27 @@ export default function ResumenStrokePage() {
     </div>
   )
 
-  // calcular gross total y neto de cada jugador
+  // calcular neto vs par de cada jugador
   const tabla = jugadores.map(j => {
     let gross = 0
-    let hoyosJugados = 0
+    let neto = 0
     hoyos.forEach(h => {
       const g = scores[j.id]?.[h.hole_number]
-      if (g !== undefined) { gross += g; hoyosJugados++ }
+      if (g !== undefined && g !== '') {
+        gross += Number(g)
+        neto += Number(g) - ventajaEnHoyo(j.hcp, h.si) - h.par
+      }
     })
-    const neto = gross - j.hcp
-    return { ...j, gross, neto, hoyosJugados }
+    return { ...j, gross, neto }
   })
 
-  // ordenar por neto ascendente (menor neto = mejor = 1er lugar)
+  // ordenar por neto ascendente (menor = mejor)
   tabla.sort((a, b) => a.neto - b.neto)
 
   const medallas = ['🥇', '🥈', '🥉']
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9' }}>
-      {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #1a3a1f 0%, #0d2410 100%)', borderBottom: '2px solid #2ECC71', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 11, letterSpacing: 4, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 4 }}>Kriter Golf Club</div>
@@ -137,7 +156,7 @@ export default function ResumenStrokePage() {
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#2ECC71' }}>{j.neto}</div>
+                <div style={{ fontSize: 24, fontWeight: 'bold', color: colorNeto(j.neto) }}>{fmtNeto(j.neto)}</div>
                 <div style={{ fontSize: 9, color: '#4a7a50', textTransform: 'uppercase' }}>Neto</div>
               </div>
             </div>
@@ -146,7 +165,7 @@ export default function ResumenStrokePage() {
 
         {/* Tabla completa */}
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '14px', border: '1px solid #2ECC7122' }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: '#81c784', textTransform: 'uppercase', marginBottom: 12 }}>Tabla Completa</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: '#81c784', textTransform: 'uppercase', marginBottom: 12 }}>Tabla Completa (neto vs par)</div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
@@ -164,7 +183,7 @@ export default function ResumenStrokePage() {
                   <td style={{ padding: '8px 6px', fontWeight: i === 0 ? 'bold' : 'normal' }}>{j.nombre}</td>
                   <td style={{ padding: '8px 6px', textAlign: 'center', color: '#e8f5e9' }}>{j.gross}</td>
                   <td style={{ padding: '8px 6px', textAlign: 'center', color: '#81c784' }}>{j.hcp}</td>
-                  <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', color: '#2ECC71' }}>{j.neto}</td>
+                  <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', color: colorNeto(j.neto) }}>{fmtNeto(j.neto)}</td>
                 </tr>
               ))}
             </tbody>
@@ -172,9 +191,9 @@ export default function ResumenStrokePage() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <button onClick={() => window.location.href = `/juego/scorecard-stroke?game=${gameId}`} style={{ flex: 1, background: 'transparent', color: '#2ECC71', border: '1px solid #2ECC71', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13 }}>← Scorecard</button>
+          <button onClick={() => window.location.href = `/juego/tarjeta-stroke?game=${gameId}`} style={{ flex: 1, background: 'transparent', color: '#2ECC71', border: '1px solid #2ECC71', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13 }}>← Tarjeta</button>
           <button onClick={() => window.location.href = '/dashboard'} style={{ flex: 1, background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold' }}>Dashboard →</button>
-        </div>
+      </div>
       </div>
     </div>
   )
