@@ -24,7 +24,7 @@ export default function NuevoJuegoPage() {
   const [paso, setPaso] = useState(1)
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [tipo, setTipo] = useState('informal')
-  const [formato, setFormato] = useState<'match_singles' | 'match_fourball' | 'stroke_play'>('match_singles')
+  const [formato, setFormato] = useState<'match_singles' | 'match_fourball' | 'stroke_play' | 'stableford'>('match_singles')
 
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
@@ -41,11 +41,10 @@ export default function NuevoJuegoPage() {
   const [parejaA, setParejaA] = useState<string[]>([])
   const [parejaB, setParejaB] = useState<string[]>([])
 
-  // Stroke Play: lista de seleccionados (2 a 8)
+  // Stroke / Stableford: lista de seleccionados (2 a 8)
   const [seleccionadosStroke, setSeleccionadosStroke] = useState<string[]>([])
 
   useEffect(() => {
-    // leer modo admin de la URL
     const params = new URLSearchParams(window.location.search)
     if (params.get('admin') === '1') setEsAdmin(true)
 
@@ -73,7 +72,6 @@ export default function NuevoJuegoPage() {
 
   const adminSuffix = esAdmin ? '?admin=1' : ''
 
-  // ---- helpers selección Fourball ----
   function toggleSeleccion(id: string) {
     if (seleccionados.includes(id)) {
       setSeleccionados(seleccionados.filter(s => s !== id))
@@ -99,7 +97,6 @@ export default function NuevoJuegoPage() {
     setParejaB(nuevaB)
   }
 
-  // ---- helper selección Stroke (2 a 8) ----
   function toggleStroke(id: string) {
     if (seleccionadosStroke.includes(id)) {
       setSeleccionadosStroke(seleccionadosStroke.filter(s => s !== id))
@@ -117,7 +114,6 @@ export default function NuevoJuegoPage() {
     return v !== null && v !== undefined ? v : 0
   }
 
-  // ---- crear juego ----
   async function handleArrancar() {
     if (!esAdmin) {
       alert('👁️ Estás en modo solo lectura.\n\nPara crear juegos, el organizador debe activar el modo edición con su PIN desde el Dashboard.')
@@ -153,17 +149,18 @@ export default function NuevoJuegoPage() {
           ...parejaB.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: CLUB_ID, hcp_index: hcpDe(pid), team_number: 2 })),
         ]
       } else {
-        // stroke_play: todos en una lista, sin equipos
+        // stroke_play y stableford: todos en una lista, sin equipos
         filas = seleccionadosStroke.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: CLUB_ID, hcp_index: hcpDe(pid), team_number: 1 }))
       }
 
       const { error: e2 } = await supabase.from('game_round_players').insert(filas)
       if (e2) throw e2
 
-// pasamos el id del juego al scorecard correcto (manteniendo modo admin)
+      // pasamos el id del juego al scorecard correcto (manteniendo modo admin)
       let ruta = '/juego/scorecard'
       if (formato === 'match_fourball') ruta = '/juego/scorecard-fourball'
       else if (formato === 'stroke_play') ruta = '/juego/tarjeta-stroke'
+      else if (formato === 'stableford') ruta = '/juego/tarjeta-stableford'
       window.location.href = `${ruta}?game=${ronda.id}&admin=1`
     } catch (err: any) {
       alert('Error al crear el juego: ' + (err?.message || err))
@@ -171,13 +168,12 @@ export default function NuevoJuegoPage() {
     }
   }
 
-  // ---- validaciones para avanzar ----
   const puedeAvanzarPaso2 =
     formato === 'match_singles'
       ? !!(jugador1 && jugador2)
       : formato === 'match_fourball'
         ? seleccionados.length === 4
-        : seleccionadosStroke.length >= 2 // stroke: mínimo 2
+        : seleccionadosStroke.length >= 2
 
   const parejasCompletas = parejaA.length === 2 && parejaB.length === 2
 
@@ -190,6 +186,7 @@ export default function NuevoJuegoPage() {
   function nombreFormato() {
     if (formato === 'match_singles') return 'Match Play Singles'
     if (formato === 'match_fourball') return 'Fourball (2 vs 2)'
+    if (formato === 'stableford') return 'Stableford'
     return 'Stroke Play'
   }
 
@@ -263,14 +260,25 @@ export default function NuevoJuegoPage() {
                   <div style={{ fontSize: 11, color: '#81c784' }}>Parejas (2 vs 2)</div>
                 </div>
               </div>
-              <div onClick={() => setFormato('stroke_play')} style={{
-                padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
-                background: formato === 'stroke_play' ? '#2ECC7122' : '#0d2410',
-                border: `2px solid ${formato === 'stroke_play' ? '#2ECC71' : '#2ECC7133'}`,
-              }}>
-                <div style={{ fontSize: 20, marginBottom: 4 }}>📊</div>
-                <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
-                <div style={{ fontSize: 11, color: '#81c784' }}>Por golpes (2 a 8 jugadores)</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div onClick={() => setFormato('stroke_play')} style={{
+                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                  background: formato === 'stroke_play' ? '#2ECC7122' : '#0d2410',
+                  border: `2px solid ${formato === 'stroke_play' ? '#2ECC71' : '#2ECC7133'}`,
+                }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>📊</div>
+                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
+                  <div style={{ fontSize: 11, color: '#81c784' }}>Por golpes (2 a 8)</div>
+                </div>
+                <div onClick={() => setFormato('stableford')} style={{
+                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                  background: formato === 'stableford' ? '#2ECC7122' : '#0d2410',
+                  border: `2px solid ${formato === 'stableford' ? '#2ECC71' : '#2ECC7133'}`,
+                }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>🎯</div>
+                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stableford</div>
+                  <div style={{ fontSize: 11, color: '#81c784' }}>Por puntos (2 a 8)</div>
+                </div>
               </div>
             </div>
 
@@ -374,7 +382,7 @@ export default function NuevoJuegoPage() {
               </div>
             )}
 
-            {formato === 'stroke_play' && (
+            {(formato === 'stroke_play' || formato === 'stableford') && (
               <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7133', marginBottom: 20 }}>
                 <div style={{ fontSize: 11, color: '#2ECC71', marginBottom: 10, letterSpacing: 2 }}>
                   SELECCIONADOS: {seleccionadosStroke.length} / 8 (mínimo 2)
@@ -420,7 +428,7 @@ export default function NuevoJuegoPage() {
         {paso === 3 && (
           <div>
             <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 16 }}>
-              {formato === 'match_singles' ? 'Paso 3 — Confirmación' : formato === 'match_fourball' ? 'Paso 3 — Arma las Parejas' : 'Paso 3 — Confirmación'}
+              {formato === 'match_fourball' ? 'Paso 3 — Arma las Parejas' : 'Paso 3 — Confirmación'}
             </div>
 
             {formato === 'match_singles' && jugador1 && jugador2 && (
@@ -484,7 +492,7 @@ export default function NuevoJuegoPage() {
               </>
             )}
 
-            {formato === 'stroke_play' && (
+            {(formato === 'stroke_play' || formato === 'stableford') && (
               <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7133', marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: '#2ECC71', marginBottom: 10, letterSpacing: 2 }}>JUGADORES ({seleccionadosStroke.length})</div>
                 {seleccionadosStroke.map(id => (
