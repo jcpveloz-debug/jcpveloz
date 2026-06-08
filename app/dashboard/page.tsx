@@ -38,14 +38,18 @@ export default function DashboardPage() {
     window.location.href = '/dashboard'
   }
 
+  // items activos (con pantalla real)
   const items = [
     { icon: '⛳', label: 'Nuevo Juego', desc: 'Iniciar una ronda', href: '/juego/nuevo' },
     { icon: '📊', label: 'Leaderboard', desc: 'Matches Fourball de hoy', href: '/leaderboard-fourball' },
     { icon: '📋', label: 'Mis Juegos', desc: 'Historial de rondas', href: '/juegos' },
     { icon: '👥', label: 'Jugadores', desc: 'Gestionar jugadores', href: '/jugadores' },
-    { icon: '🏆', label: 'Resultados', desc: 'Ver marcadores', href: '/resultados' },
-    { icon: '⚙️', label: 'Mi Perfil', desc: 'Datos y HCP', href: '/perfil' },
-    { icon: '🏌️', label: 'Mi Club', desc: 'Info del club', href: '/club' },
+  ]
+
+  // items próximamente (sin pantalla aún)
+  const proximamente = [
+    { icon: '⚙️', label: 'Mi Perfil', desc: 'Datos y HCP' },
+    { icon: '🏌️', label: 'Mi Club', desc: 'Info del club' },
   ]
 
   return (
@@ -155,6 +159,20 @@ export default function DashboardPage() {
               <div style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{item.label}</div>
               <div style={{ fontSize: 11, color: '#81c784' }}>{item.desc}</div>
+            </div>
+          ))}
+
+          {/* Próximamente — apagados, no clicables */}
+          {proximamente.map((item, i) => (
+            <div key={`prox-${i}`}
+              style={{
+                background: '#12201580', borderRadius: 12, padding: '16px',
+                border: '1px dashed #2ECC7122', cursor: 'default', opacity: 0.5, position: 'relative',
+              }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</div>
+              <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 11, color: '#81c784' }}>{item.desc}</div>
+              <div style={{ position: 'absolute', top: 10, right: 10, fontSize: 8, letterSpacing: 1, color: '#F39C12', textTransform: 'uppercase', border: '1px solid #F39C1244', borderRadius: 4, padding: '2px 5px' }}>Pronto</div>
             </div>
           ))}
         </div>
