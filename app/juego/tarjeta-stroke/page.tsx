@@ -32,7 +32,19 @@ function colorNeto(n: number): string {
   if (n === 0) return '#F39C12' // par = naranja (destacado)
   return '#e8f5e9'              // sobre par = blanco
 }
-
+// decide la marca visual sobre el BRUTO (gross vs par)
+// círculos = bajo par, recuadros = sobre par, hole-in-one (gross 1) = 3 círculos
+function marcaBruto(gross: number, par: number): { forma: 'circulo' | 'recuadro' | null; cantidad: number } {
+  if (gross === 1) return { forma: 'circulo', cantidad: 3 } // hole in one
+  const dif = gross - par
+  if (dif <= -3) return { forma: 'circulo', cantidad: 3 }
+  if (dif === -2) return { forma: 'circulo', cantidad: 2 }
+  if (dif === -1) return { forma: 'circulo', cantidad: 1 }
+  if (dif === 1) return { forma: 'recuadro', cantidad: 1 }
+  if (dif === 2) return { forma: 'recuadro', cantidad: 2 }
+  if (dif >= 3) return { forma: 'recuadro', cantidad: 3 }
+  return { forma: null, cantidad: 0 } // par = sin marca
+}
 function leerGameId(): string | null {
   if (typeof window === 'undefined') return null
   return new URLSearchParams(window.location.search).get('game')
@@ -246,17 +258,30 @@ export default function TarjetaStrokePage() {
                       const g = getScore(j.id, h.hole_number)
                       const v = ventajaEnHoyo(j.hcp, h.si)
                       const n = netoHoyo(j, h)
-return (
+const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad: 0 }
+                      return (
                         <td key={h.hole_number} style={{ padding: '4px 0', textAlign: 'center', borderLeft: '1px solid #2ECC7122' }}>
                           <div onClick={() => abrirPanel(j.id, h.hole_number)} style={{
                             width: 42, minHeight: 40, margin: '0 auto', padding: '3px 0',
                             cursor: esAdmin ? 'pointer' : 'default', position: 'relative',
                           }}>
-                            <div style={{ fontSize: 16, fontWeight: 'bold', color: g !== '' ? '#e8f5e9' : '#4a7a50', lineHeight: '18px' }}>
-                              {g !== '' ? g : '–'}
+                            <div style={{ position: 'relative', width: 26, height: 26, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {marca.forma && Array.from({ length: marca.cantidad }).map((_, k) => (
+                                <span key={k} style={{
+                                  position: 'absolute',
+                                  width: 22 + k * 5,
+                                  height: 22 + k * 5,
+                                  border: '1px solid #e8f5e966',
+                                  borderRadius: marca.forma === 'circulo' ? '50%' : 3,
+                                  pointerEvents: 'none',
+                                }} />
+                              ))}
+                              <span style={{ fontSize: 16, fontWeight: 'bold', color: g !== '' ? '#e8f5e9' : '#4a7a50', lineHeight: '16px', position: 'relative', zIndex: 1 }}>
+                                {g !== '' ? g : '–'}
+                              </span>
                             </div>
                             {n !== null && (
-                              <div style={{ fontSize: 9, fontWeight: 'bold', color: colorNeto(n), lineHeight: '11px' }}>
+                              <div style={{ fontSize: 9, fontWeight: 'bold', color: colorNeto(n), lineHeight: '11px', marginTop: 2 }}>
                                 {fmtNeto(n)}
                               </div>
                             )}
