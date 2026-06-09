@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const CLUB_ID = '209f9af7-a863-4967-b6fe-9c3bb96dcafe'
+const COURSE_ID = '92b555b3-cba3-4d0c-84fd-b1d2720f1f07'
 
 interface Jugador { id: string; nombre: string; hcp: number }
 interface Duelo { j1: Jugador; j2: Jugador }
@@ -83,10 +84,14 @@ export default function MatchMultiplePage() {
       for (let i = 0; i < duelos.length; i++) {
         const d = duelos[i]
         // crear el game_round del duelo
-        const { data: gr, error: e1 } = await supabase
+const { data: gr, error: e1 } = await supabase
           .from('game_rounds')
           .insert({
             club_id: CLUB_ID,
+            course_id: COURSE_ID,
+            name: `Match Múltiple Duelo ${i + 1}`,
+            date: new Date().toISOString().split('T')[0],
+            type: 'informal',
             format: 'match_singles',
             status: 'in_progress',
             tournament_group: grupo,
