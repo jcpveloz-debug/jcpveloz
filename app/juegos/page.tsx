@@ -6,14 +6,16 @@ import { supabase } from '@/lib/supabase'
 
 const CLUB_ID = '209f9af7-a863-4967-b6fe-9c3bb96dcafe'
 
-interface Ronda {
-  id: string
+interface Item {
+  tipo: 'juego' | 'torneo'
+  id: string            // id de ronda (juego) o tournament_group (torneo)
   name: string
   date: string
   type: string
   format: string
   status: string
-  numJugadores: number
+  numJugadores: number  // para juego: jugadores; para torneo: num duelos
+  rondaIds?: string[]   // ids de las rondas del torneo (para borrar)
 }
 
 const FORMATOS: Record<string, { icon: string; label: string }> = {
@@ -31,7 +33,7 @@ function rutaTarjeta(format: string, gameId: string, adminSuffix: string): strin
 }
 
 export default function JuegosPage() {
-  const [rondas, setRondas] = useState<Ronda[]>([])
+  const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [esAdmin, setEsAdmin] = useState(false)
   const [borrando, setBorrando] = useState<string | null>(null)
@@ -46,40 +48,68 @@ export default function JuegosPage() {
     setLoading(true)
     const { data: rData } = await supabase
       .from('game_rounds')
-      .select('id, name, date, type, format, status')
+      .select('id, name, date, type, format, status, tournament_group, created_at')
       .eq('club_id', CLUB_ID)
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
 
     const rondasBase = rData || []
 
-    // contar jugadores de cada ronda
-    const conConteo: Ronda[] = []
-    for (const r of rondasBase) {
+    // separar: rondas sueltas vs rondas de torneo (con tournament_group)
+    const sueltas = rondasBase.filter(r => !r.tournament_group)
+    const deTorneo = rondasBase.filter(r => r.tournament_group)
+
+    const lista: Item[] = []
+
+    // juegos sueltos: con conteo de jugadores
+    for (const r of sueltas) {
       const { count } = await supabase
         .from('game_round_players')
         .select('*', { count: 'exact', head: true })
         .eq('game_round_id', r.id)
-      conConteo.push({ ...r, numJugadores: count ?? 0 })
+      lista.push({
+        tipo: 'juego', id: r.id, name: r.name, date: r.date, type: r.type,
+        format: r.format, status: r.status, numJugadores: count ?? 0,
+      })
     }
-    setRondas(conConteo)
+
+    // torneos: agrupar por tournament_group
+    const grupos: Record<string, typeof deTorneo> = {}
+    deTorneo.forEach(r => {
+      const g = r.tournament_group as string
+      if (!grupos[g]) grupos[g] = []
+      grupos[g].push(r)
+    })
+    Object.entries(grupos).forEach(([g, rondas]) => {
+      // usar la fecha de la primera ronda
+      const primera = rondas[0]
+      lista.push({
+        tipo: 'torneo', id: g, name: 'Torneo Match Play', date: primera.date,
+        type: primera.type, format: 'match_multiple', status: primera.status,
+        numJugadores: rondas.length, rondaIds: rondas.map(r => r.id),
+      })
+    })
+
+    // ordenar todo por fecha descendente
+    lista.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+
+    setItems(lista)
     setLoading(false)
   }
 
   const adminSuffix = esAdmin ? '&admin=1' : ''
 
-  async function borrarRonda(id: string) {
+  async function borrarJuego(id: string) {
     if (!esAdmin) return
     const ok = window.confirm('¿Borrar esta ronda? Se eliminarán también sus golpes capturados. Esta acción no se puede deshacer.')
     if (!ok) return
     setBorrando(id)
     try {
-      // borrar primero los hijos, luego la ronda
       await supabase.from('hole_scores').delete().eq('game_round_id', id)
       await supabase.from('game_round_players').delete().eq('game_round_id', id)
       const { error } = await supabase.from('game_rounds').delete().eq('id', id)
       if (error) throw error
-      setRondas(prev => prev.filter(r => r.id !== id))
+      setItems(prev => prev.filter(r => r.id !== id))
     } catch (err: any) {
       alert('Error al borrar: ' + (err?.message || err))
     } finally {
@@ -87,9 +117,27 @@ export default function JuegosPage() {
     }
   }
 
+  async function borrarTorneo(grupo: string, rondaIds: string[]) {
+    if (!esAdmin) return
+    const ok = window.confirm(`¿Borrar este torneo completo (${rondaIds.length} duelos)? Se eliminarán todos sus golpes. No se puede deshacer.`)
+    if (!ok) return
+    setBorrando(grupo)
+    try {
+      for (const rid of rondaIds) {
+        await supabase.from('hole_scores').delete().eq('game_round_id', rid)
+        await supabase.from('game_round_players').delete().eq('game_round_id', rid)
+        await supabase.from('game_rounds').delete().eq('id', rid)
+      }
+      setItems(prev => prev.filter(r => r.id !== grupo))
+    } catch (err: any) {
+      alert('Error al borrar torneo: ' + (err?.message || err))
+    } finally {
+      setBorrando(null)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9' }}>
-      {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #1a3a1f 0%, #0d2410 100%)', borderBottom: '2px solid #2ECC71', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 11, letterSpacing: 4, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 4 }}>Kriter Golf Club</div>
@@ -98,7 +146,6 @@ export default function JuegosPage() {
         <button onClick={() => window.location.href = '/dashboard' + (esAdmin ? '?admin=1' : '')} style={{ background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71', padding: '8px 16px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif' }}>← Dashboard</button>
       </div>
 
-      {/* Etiqueta de modo */}
       <div style={{
         background: esAdmin ? '#2ECC7122' : '#F39C1222',
         color: esAdmin ? '#2ECC71' : '#F39C12',
@@ -110,7 +157,7 @@ export default function JuegosPage() {
       <div style={{ padding: '20px 16px 60px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', color: '#2ECC71', padding: 40 }}>Cargando juegos...</div>
-        ) : rondas.length === 0 ? (
+        ) : items.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#81c784', padding: 40 }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>⛳</div>
             <div style={{ fontSize: 15 }}>Aún no hay juegos registrados.</div>
@@ -118,29 +165,34 @@ export default function JuegosPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {rondas.map(r => {
-              const f = FORMATOS[r.format] || { icon: '⛳', label: r.format }
+            {items.map(r => {
+              const esTorneo = r.tipo === 'torneo'
+              const f = esTorneo ? { icon: '⚔️', label: 'Torneo Match Play' } : (FORMATOS[r.format] || { icon: '⛳', label: r.format })
+              const destino = esTorneo
+                ? `/juego/match-multiple-tablero?grupo=${r.id}${adminSuffix}`
+                : rutaTarjeta(r.format, r.id, adminSuffix)
               return (
                 <div key={r.id} style={{
-                  background: '#1a2e1d', borderRadius: 12, padding: '14px 16px', border: '1px solid #2ECC7122',
+                  background: '#1a2e1d', borderRadius: 12, padding: '14px 16px',
+                  border: `1px solid ${esTorneo ? '#F39C1244' : '#2ECC7122'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                 }}>
                   <div
-                    onClick={() => window.location.href = rutaTarjeta(r.format, r.id, adminSuffix)}
+                    onClick={() => window.location.href = destino}
                     style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, cursor: 'pointer', minWidth: 0 }}
                   >
                     <div style={{ fontSize: 26, flexShrink: 0 }}>{f.icon}</div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
                       <div style={{ fontSize: 11, color: '#81c784', marginTop: 2 }}>
-                        {r.date} · {r.numJugadores} jugador{r.numJugadores !== 1 ? 'es' : ''}
+                        {r.date} · {esTorneo ? `${r.numJugadores} duelo${r.numJugadores !== 1 ? 's' : ''}` : `${r.numJugadores} jugador${r.numJugadores !== 1 ? 'es' : ''}`}
                         <span style={{ textTransform: 'capitalize' }}> · {r.type}</span>
                       </div>
                     </div>
                   </div>
                   {esAdmin && (
                     <button
-                      onClick={() => borrarRonda(r.id)}
+                      onClick={() => esTorneo ? borrarTorneo(r.id, r.rondaIds || []) : borrarJuego(r.id)}
                       disabled={borrando === r.id}
                       style={{
                         background: 'transparent', border: '1px solid #e74c3c55', borderRadius: 8,
