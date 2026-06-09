@@ -250,6 +250,12 @@ export default function ScorecardFourballPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9' }}>
       <div style={{ background: 'linear-gradient(135deg, #1a3a1f 0%, #0d2410 100%)', borderBottom: '2px solid #2ECC71', padding: '16px 20px', position: 'sticky', top: 0, zIndex: 100 }}>
+<div style={{ marginBottom: 10 }}>
+          <button onClick={() => window.location.href = '/dashboard' + (esAdmin ? '?admin=1' : '')} style={{
+            background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71',
+            padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
+          }}>← Dashboard</button>
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 10, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase' }}>Fourball — 2 vs 2</div>
@@ -356,18 +362,19 @@ export default function ScorecardFourballPage() {
           </div>
         </div>
 
-        {jugados === hoyos.length && hoyos.length > 0 && (
-          <button
-            onClick={() => window.location.href = `/juego/resumen-fourball?game=${gameId}${adminSuffix}`}
-            style={{
-              width: '100%', marginBottom: 16, background: '#F39C12', color: '#0a1a0f',
-              border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer',
-              fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
-            }}
-          >
-            🏆 Ver Resumen Final
-          </button>
-        )}
+<button
+          onClick={() => window.location.href = `/juego/resumen-fourball?game=${gameId}${adminSuffix}`}
+          style={{
+            width: '100%', marginBottom: 16,
+            background: jugados === hoyos.length && hoyos.length > 0 ? '#F39C12' : 'transparent',
+            color: jugados === hoyos.length && hoyos.length > 0 ? '#0a1a0f' : '#F39C12',
+            border: jugados === hoyos.length && hoyos.length > 0 ? 'none' : '1px solid #F39C12',
+            borderRadius: 10, padding: '12px', cursor: 'pointer',
+            fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
+          }}
+        >
+          {jugados === hoyos.length && hoyos.length > 0 ? '🏆 Ver Resumen Final' : '🏆 Ver Resumen (parcial)'}
+        </button>
 
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '14px', border: '1px solid #2ECC7122' }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: '#81c784', textTransform: 'uppercase', marginBottom: 10 }}>Marcador (mejor bola de cada pareja)</div>
