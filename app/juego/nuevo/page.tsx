@@ -301,8 +301,16 @@ export default function NuevoJuegoPage() {
               <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={{ width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8, padding: '10px 14px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14, boxSizing: 'border-box' }} />
             </div>
 
-            <button onClick={() => setPaso(2)} style={{ width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 15, fontWeight: 'bold' }}>
+<button onClick={() => setPaso(2)} style={{ width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 15, fontWeight: 'bold' }}>
               Siguiente →
+            </button>
+
+            <div style={{ margin: '20px 0 8px', textAlign: 'center', fontSize: 11, color: '#4a7a50', letterSpacing: 2 }}>— O TORNEO DE VARIOS DUELOS —</div>
+            <button onClick={() => window.location.href = '/juego/match-multiple' + adminSuffix} style={{
+              width: '100%', background: 'transparent', color: '#F39C12', border: '1px solid #F39C12',
+              borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
+            }}>
+              ⚔️ Match Play Múltiple (varias parejas)
             </button>
           </div>
         )}
