@@ -270,7 +270,7 @@ export default function NuevoJuegoPage() {
                   <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
                   <div style={{ fontSize: 11, color: '#81c784' }}>Por golpes (2 a 8)</div>
                 </div>
-                <div onClick={() => setFormato('stableford')} style={{
+<div onClick={() => setFormato('stableford')} style={{
                   flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
                   background: formato === 'stableford' ? '#2ECC7122' : '#0d2410',
                   border: `2px solid ${formato === 'stableford' ? '#2ECC71' : '#2ECC7133'}`,
@@ -279,6 +279,16 @@ export default function NuevoJuegoPage() {
                   <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stableford</div>
                   <div style={{ fontSize: 11, color: '#81c784' }}>Por puntos (2 a 8)</div>
                 </div>
+              </div>
+
+              <div style={{ margin: '14px 0 0', paddingTop: 14, borderTop: '1px solid #2ECC7122' }}>
+                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>O TORNEO DE VARIAS PAREJAS</div>
+                <button onClick={() => window.location.href = '/juego/match-multiple' + adminSuffix} style={{
+                  width: '100%', background: 'transparent', color: '#F39C12', border: '1px solid #F39C12',
+                  borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
+                }}>
+                  ⚔️ Match Play Múltiple
+                </button>
               </div>
             </div>
 
@@ -305,13 +315,6 @@ export default function NuevoJuegoPage() {
               Siguiente →
             </button>
 
-            <div style={{ margin: '20px 0 8px', textAlign: 'center', fontSize: 11, color: '#4a7a50', letterSpacing: 2 }}>— O TORNEO DE VARIOS DUELOS —</div>
-            <button onClick={() => window.location.href = '/juego/match-multiple' + adminSuffix} style={{
-              width: '100%', background: 'transparent', color: '#F39C12', border: '1px solid #F39C12',
-              borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
-            }}>
-              ⚔️ Match Play Múltiple (varias parejas)
-            </button>
           </div>
         )}
 
