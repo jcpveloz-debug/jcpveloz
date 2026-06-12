@@ -171,9 +171,28 @@ export default function TarjetaStrokePage() {
     } catch (err: any) {
       alert('Error al guardar: ' + (err?.message || err))
     } finally {
+    setGuardando(false)
+    }
+  }
+
+  async function borrarGolpe(jid: string, hole: number) {
+    setScores(prev => ({ ...prev, [jid]: { ...prev[jid], [hole]: '' } }))
+    setPanel(null)
+    setGuardando(true)
+    try {
+      const { error } = await supabase.from('hole_scores')
+        .delete()
+        .eq('game_round_id', gameId)
+        .eq('player_id', jid)
+        .eq('hole_number', hole)
+      if (error) throw error
+    } catch (err: any) {
+      alert('Error al borrar: ' + (err?.message || err))
+    } finally {
       setGuardando(false)
     }
   }
+    
 
   // gross de un tramo
   function grossTramo(jid: string, tr: Hoyo[]): number {
@@ -374,10 +393,16 @@ const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad:
                 }}>{n}</button>
               ))}
             </div>
-            <button onClick={() => setPanel(null)} style={{
-              width: '100%', marginTop: 14, background: 'transparent', color: '#81c784', border: '1px solid #2ECC7144',
-              borderRadius: 8, padding: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13,
-            }}>Cerrar</button>
+<div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+              <button onClick={() => borrarGolpe(panel.jugadorId, panel.hole)} style={{
+                flex: 1, background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c',
+                borderRadius: 8, padding: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
+              }}>🗑️ Borrar</button>
+              <button onClick={() => setPanel(null)} style={{
+                flex: 1, background: 'transparent', color: '#81c784', border: '1px solid #2ECC7144',
+                borderRadius: 8, padding: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13,
+              }}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
