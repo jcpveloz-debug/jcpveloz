@@ -4,8 +4,6 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const CLUB_ID = '209f9af7-a863-4967-b6fe-9c3bb96dcafe'
-
 interface Jugador {
   id: string
   golf_name: string
@@ -13,9 +11,17 @@ interface Jugador {
   active: boolean
 }
 
+interface Campo {
+  id: string
+  name: string
+  club_id: string
+}
+
 export default function JugadoresPage() {
   const [esAdmin, setEsAdmin] = useState(false)
   const [jugadores, setJugadores] = useState<Jugador[]>([])
+  const [campos, setCampos] = useState<Campo[]>([])
+  const [clubSel, setClubSel] = useState<string>('')   // club_id seleccionado
   const [loading, setLoading] = useState(true)
   const [verArchivados, setVerArchivados] = useState(false)
   const [mostrarForm, setMostrarForm] = useState(false)
@@ -26,23 +32,50 @@ export default function JugadoresPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('admin') === '1') setEsAdmin(true)
-    cargar()
+
+    async function init() {
+      setLoading(true)
+      // Cargar campos (cada uno con su club_id)
+      const { data: cData } = await supabase
+        .from('golf_courses')
+        .select('id, name, club_id')
+        .eq('active', true)
+        .order('name')
+      const lista = cData || []
+      setCampos(lista)
+
+      // Club por defecto: Las Misiones si está, si no el primero
+      const porDefecto = lista.find(c => c.name?.includes('Misiones')) || lista[0]
+      const clubInicial = porDefecto ? porDefecto.club_id : ''
+      setClubSel(clubInicial)
+
+      if (clubInicial) await cargarJugadores(clubInicial)
+      setLoading(false)
+    }
+    init()
   }, [])
 
   const adminSuffix = esAdmin ? '?admin=1' : ''
 
-  async function cargar() {
-    setLoading(true)
+  async function cargarJugadores(clubId: string) {
     const { data } = await supabase
       .from('players')
       .select('id, golf_name, hcp_base, active')
-      .eq('club_id', CLUB_ID)
+      .eq('club_id', clubId)
       .order('golf_name')
     setJugadores(data || [])
+  }
+
+  async function cambiarClub(clubId: string) {
+    setClubSel(clubId)
+    setMostrarForm(false)
+    setLoading(true)
+    await cargarJugadores(clubId)
     setLoading(false)
   }
 
   async function agregarJugador() {
+    if (!clubSel) { alert('Selecciona un campo primero.'); return }
     if (!nuevoNombre.trim()) { alert('Escribe el nombre del jugador.'); return }
     const hcpNum = nuevoHcp === '' ? 0 : Number(nuevoHcp)
     if (isNaN(hcpNum)) { alert('El HCP debe ser un número (ej. 12.5).'); return }
@@ -51,14 +84,14 @@ export default function JugadoresPage() {
       const { error } = await supabase.from('players').insert({
         golf_name: nuevoNombre.trim(),
         hcp_base: hcpNum,
-        club_id: CLUB_ID,
+        club_id: clubSel,
         active: true,
       })
       if (error) throw error
       setNuevoNombre('')
       setNuevoHcp('')
       setMostrarForm(false)
-      await cargar()
+      await cargarJugadores(clubSel)
     } catch (err: any) {
       alert('Error al agregar: ' + (err?.message || err))
     } finally {
@@ -70,7 +103,7 @@ export default function JugadoresPage() {
     try {
       const { error } = await supabase.from('players').update({ active: nuevoActivo }).eq('id', jug.id)
       if (error) throw error
-      await cargar()
+      await cargarJugadores(clubSel)
     } catch (err: any) {
       alert('Error: ' + (err?.message || err))
     }
@@ -79,6 +112,7 @@ export default function JugadoresPage() {
   const activos = jugadores.filter(j => j.active)
   const archivados = jugadores.filter(j => !j.active)
   const lista = verArchivados ? archivados : activos
+  const nombreCampoSel = campos.find(c => c.club_id === clubSel)?.name || ''
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9' }}>
@@ -101,6 +135,27 @@ export default function JugadoresPage() {
       </div>
 
       <div style={{ padding: '20px 16px 60px' }}>
+
+        {/* SELECTOR DE CAMPO (dropdown) */}
+        <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '14px 16px', border: '1px solid #2ECC7144', marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>CAMPO</div>
+          <select
+            value={clubSel}
+            onChange={e => cambiarClub(e.target.value)}
+            style={{
+              width: '100%', background: '#0d2410', border: '1px solid #2ECC71', borderRadius: 8,
+              padding: '12px 12px', color: '#2ECC71', fontFamily: 'Georgia, serif', fontSize: 15, fontWeight: 'bold',
+              boxSizing: 'border-box', cursor: 'pointer',
+            }}
+          >
+            {campos.map(c => (
+              <option key={c.id} value={c.club_id} style={{ background: '#0d2410', color: '#e8f5e9' }}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Controles */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
           <button onClick={() => setVerArchivados(false)} style={{
@@ -121,13 +176,16 @@ export default function JugadoresPage() {
             width: '100%', marginBottom: 16, background: mostrarForm ? '#4a7a50' : '#2ECC71', color: '#0a1a0f',
             border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
           }}>
-            {mostrarForm ? '✕ Cancelar' : '+ Agregar Jugador'}
+            {mostrarForm ? '✕ Cancelar' : `+ Agregar Jugador a ${nombreCampoSel}`}
           </button>
         )}
 
         {/* Formulario */}
         {esAdmin && mostrarForm && !verArchivados && (
           <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7144', marginBottom: 16 }}>
+            <div style={{ fontSize: 10, color: '#F39C12', marginBottom: 10, letterSpacing: 1 }}>
+              Se agregará a: {nombreCampoSel}
+            </div>
             <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>NOMBRE</div>
             <input
               value={nuevoNombre}
@@ -157,7 +215,7 @@ export default function JugadoresPage() {
           <div style={{ textAlign: 'center', color: '#2ECC71', padding: 40 }}>Cargando...</div>
         ) : lista.length === 0 ? (
           <div style={{ background: '#1a2e1d', borderRadius: 12, padding: 30, textAlign: 'center', color: '#81c784', border: '1px solid #2ECC7122' }}>
-            {verArchivados ? 'No hay jugadores archivados.' : 'No hay jugadores activos. Agrega el primero.'}
+            {verArchivados ? 'No hay jugadores archivados.' : `No hay jugadores activos en ${nombreCampoSel}. Agrega el primero.`}
           </div>
         ) : (
           lista.map(j => (

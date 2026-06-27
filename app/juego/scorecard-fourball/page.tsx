@@ -37,6 +37,7 @@ export default function ScorecardFourballPage() {
   const [esAdmin, setEsAdmin] = useState(false)
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
+  const [nombreCampo, setNombreCampo] = useState('')
   const [loading, setLoading] = useState(true)
   const [hoyoActivo, setHoyoActivo] = useState(0)
   const [guardando, setGuardando] = useState(false)
@@ -51,13 +52,30 @@ export default function ScorecardFourballPage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
+// Leer el campo (course_id) del juego, no usar el fijo
+const { data: rondaData } = await supabase
+        .from('game_rounds')
+        .select('course_id')
+        .eq('id', id)
+        .single()
+      const cursoDelJuego = rondaData?.course_id || COURSE_ID
+
+      // traer el nombre del campo para el título
+      const { data: campoData } = await supabase
+        .from('golf_courses')
+        .select('name')
+        .eq('id', cursoDelJuego)
+        .single()
+      setNombreCampo(campoData?.name || '')
+
       const { data: hData } = await supabase
         .from('course_holes')
         .select('hole_number, par, si')
-        .eq('course_id', COURSE_ID)
+        .eq('course_id', cursoDelJuego)
         .order('hole_number')
       const holes = hData || []
       setHoyos(holes)
+
 
       const { data: grp } = await supabase
         .from('game_round_players')
@@ -259,7 +277,7 @@ export default function ScorecardFourballPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 10, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase' }}>Fourball — 2 vs 2</div>
-            <div style={{ fontSize: 16, fontWeight: 'bold' }}>Club Las Misiones</div>
+           <div style={{ fontSize: 16, fontWeight: 'bold' }}>{nombreCampo || 'Campo'}</div>
           </div>
           <div style={{ padding: '6px 16px', borderRadius: 20, background: marcadorColor + '33', color: marcadorColor, fontSize: 16, fontWeight: 'bold' }}>
             {marcadorLabel}

@@ -5,9 +5,6 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const CLUB_ID = '209f9af7-a863-4967-b6fe-9c3bb96dcafe'
-const COURSE_ID = '92b555b3-cba3-4d0c-84fd-b1d2720f1f07'
-
 interface Jugador {
   id: string
   golf_name: string
@@ -28,6 +25,8 @@ export default function NuevoJuegoPage() {
 
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
+  const [campos, setCampos] = useState<any[]>([])
+  const [campoSel, setCampoSel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [esAdmin, setEsAdmin] = useState(false)
@@ -50,25 +49,66 @@ export default function NuevoJuegoPage() {
 
     async function cargar() {
       setLoading(true)
-      const { data: pData } = await supabase
-        .from('players')
-        .select('id, golf_name, hcp_base')
-        .eq('club_id', CLUB_ID)
+      // Cargar todos los campos activos
+      const { data: cData } = await supabase
+        .from('golf_courses')
+        .select('id, name, club_id, city, state')
         .eq('active', true)
-        .order('golf_name')
+        .order('name')
 
-      const { data: hData } = await supabase
-        .from('course_holes')
-        .select('hole_number, par, si')
-        .eq('course_id', COURSE_ID)
-        .order('hole_number')
+      const listaCampos = cData || []
+      setCampos(listaCampos)
 
-      setJugadores(pData || [])
-      setHoyos(hData || [])
+      // Campo por defecto: el primero (o Las Misiones si está)
+      const porDefecto = listaCampos.find(c => c.name?.includes('Misiones')) || listaCampos[0] || null
+      setCampoSel(porDefecto)
+
+      // Cargar jugadores del club del campo por defecto
+      if (porDefecto) {
+        const { data: pData } = await supabase
+          .from('players')
+          .select('id, golf_name, hcp_base')
+          .eq('club_id', porDefecto.club_id)
+          .eq('active', true)
+          .order('golf_name')
+        setJugadores(pData || [])
+
+        const { data: hData } = await supabase
+          .from('course_holes')
+          .select('hole_number, par, si')
+          .eq('course_id', porDefecto.id)
+          .order('hole_number')
+        setHoyos(hData || [])
+      }
+
       setLoading(false)
     }
     cargar()
   }, [])
+
+  // Cuando cambia el campo seleccionado, recargar jugadores y hoyos de ese campo
+  async function elegirCampo(campo: any) {
+    setCampoSel(campo)
+    // limpiar selecciones de jugadores (cambian según el club)
+    setJugador1(null); setJugador2(null)
+    setSeleccionados([]); setParejaA([]); setParejaB([])
+    setSeleccionadosStroke([])
+
+    const { data: pData } = await supabase
+      .from('players')
+      .select('id, golf_name, hcp_base')
+      .eq('club_id', campo.club_id)
+      .eq('active', true)
+      .order('golf_name')
+    setJugadores(pData || [])
+
+    const { data: hData } = await supabase
+      .from('course_holes')
+      .select('hole_number, par, si')
+      .eq('course_id', campo.id)
+      .order('hole_number')
+    setHoyos(hData || [])
+  }
 
   const adminSuffix = esAdmin ? '?admin=1' : ''
 
@@ -119,13 +159,17 @@ export default function NuevoJuegoPage() {
       alert('👁️ Estás en modo solo lectura.\n\nPara crear juegos, el organizador debe activar el modo edición con su PIN desde el Dashboard.')
       return
     }
+    if (!campoSel) {
+      alert('Selecciona un campo antes de arrancar.')
+      return
+    }
     setGuardando(true)
     try {
       const { data: ronda, error: e1 } = await supabase
         .from('game_rounds')
         .insert({
-          club_id: CLUB_ID,
-          course_id: COURSE_ID,
+          club_id: campoSel.club_id,
+          course_id: campoSel.id,
           name: `Juego ${fecha}`,
           date: fecha,
           type: tipo,
@@ -140,17 +184,17 @@ export default function NuevoJuegoPage() {
       let filas: any[] = []
       if (formato === 'match_singles') {
         filas = [
-          { game_round_id: ronda.id, player_id: jugador1, club_id: CLUB_ID, hcp_index: hcpDe(jugador1), team_number: 1, rival_id: jugador2 },
-          { game_round_id: ronda.id, player_id: jugador2, club_id: CLUB_ID, hcp_index: hcpDe(jugador2), team_number: 2, rival_id: jugador1 },
+          { game_round_id: ronda.id, player_id: jugador1, club_id: campoSel.club_id, hcp_index: hcpDe(jugador1), team_number: 1, rival_id: jugador2 },
+          { game_round_id: ronda.id, player_id: jugador2, club_id: campoSel.club_id, hcp_index: hcpDe(jugador2), team_number: 2, rival_id: jugador1 },
         ]
       } else if (formato === 'match_fourball') {
         filas = [
-          ...parejaA.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: CLUB_ID, hcp_index: hcpDe(pid), team_number: 1 })),
-          ...parejaB.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: CLUB_ID, hcp_index: hcpDe(pid), team_number: 2 })),
+          ...parejaA.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: campoSel.club_id, hcp_index: hcpDe(pid), team_number: 1 })),
+          ...parejaB.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: campoSel.club_id, hcp_index: hcpDe(pid), team_number: 2 })),
         ]
       } else {
         // stroke_play y stableford: todos en una lista, sin equipos
-        filas = seleccionadosStroke.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: CLUB_ID, hcp_index: hcpDe(pid), team_number: 1 }))
+        filas = seleccionadosStroke.map(pid => ({ game_round_id: ronda.id, player_id: pid, club_id: campoSel.club_id, hcp_index: hcpDe(pid), team_number: 1 }))
       }
 
       const { error: e2 } = await supabase.from('game_round_players').insert(filas)
@@ -232,10 +276,34 @@ export default function NuevoJuegoPage() {
           <div>
             <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 16 }}>Paso 1 — Configuración</div>
 
+            {/* SELECTOR DE CAMPO */}
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7122', marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: '#81c784', marginBottom: 8 }}>CAMPO</div>
-              <div style={{ fontSize: 16, fontWeight: 'bold' }}>🏌️ Club Las Misiones</div>
-              <div style={{ fontSize: 12, color: '#81c784', marginTop: 4 }}>Monterrey, Nuevo León</div>
+              <div style={{ fontSize: 11, color: '#81c784', marginBottom: 10 }}>CAMPO</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {campos.map(c => {
+                  const sel = campoSel?.id === c.id
+                  return (
+                    <div key={c.id} onClick={() => elegirCampo(c)} style={{
+                      padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
+                      background: sel ? '#2ECC7122' : '#0d2410',
+                      border: `2px solid ${sel ? '#2ECC71' : '#2ECC7133'}`,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 'bold', color: sel ? '#2ECC71' : '#e8f5e9' }}>
+                          🏌️ {c.name}
+                        </div>
+                        {(c.city || c.state) && (
+                          <div style={{ fontSize: 11, color: '#81c784', marginTop: 2 }}>
+                            {[c.city, c.state].filter(Boolean).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                      {sel && <span style={{ color: '#2ECC71', fontSize: 18, fontWeight: 'bold' }}>✓</span>}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7122', marginBottom: 12 }}>
@@ -270,7 +338,7 @@ export default function NuevoJuegoPage() {
                   <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
                   <div style={{ fontSize: 11, color: '#81c784' }}>Por golpes (2 a 8)</div>
                 </div>
-<div onClick={() => setFormato('stableford')} style={{
+                <div onClick={() => setFormato('stableford')} style={{
                   flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
                   background: formato === 'stableford' ? '#2ECC7122' : '#0d2410',
                   border: `2px solid ${formato === 'stableford' ? '#2ECC71' : '#2ECC7133'}`,
@@ -311,7 +379,7 @@ export default function NuevoJuegoPage() {
               <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={{ width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8, padding: '10px 14px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14, boxSizing: 'border-box' }} />
             </div>
 
-<button onClick={() => setPaso(2)} style={{ width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 15, fontWeight: 'bold' }}>
+            <button onClick={() => setPaso(2)} style={{ width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 15, fontWeight: 'bold' }}>
               Siguiente →
             </button>
 
@@ -324,6 +392,12 @@ export default function NuevoJuegoPage() {
             <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 16 }}>
               {tituloPaso2()}
             </div>
+
+            {jugadores.length === 0 && (
+              <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #F39C1244', marginBottom: 16, color: '#F39C12', fontSize: 13, textAlign: 'center' }}>
+                Este campo aún no tiene jugadores registrados.
+              </div>
+            )}
 
             {formato === 'match_singles' && (
               <>
@@ -516,6 +590,10 @@ export default function NuevoJuegoPage() {
             )}
 
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '14px 16px', border: '1px solid #2ECC7122', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: '#81c784' }}>Campo</span>
+                <span style={{ fontSize: 12, fontWeight: 'bold' }}>{campoSel?.name || '—'}</span>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 12, color: '#81c784' }}>Formato</span>
                 <span style={{ fontSize: 12, fontWeight: 'bold' }}>{nombreFormato()}</span>

@@ -59,10 +59,18 @@ export default function TarjetaStablefordPage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
+// Leer el campo (course_id) del juego, no usar el fijo
+      const { data: rondaData } = await supabase
+        .from('game_rounds')
+        .select('course_id')
+        .eq('id', id)
+        .single()
+      const cursoDelJuego = rondaData?.course_id || COURSE_ID
+
       const { data: hData } = await supabase
         .from('course_holes')
         .select('hole_number, par, si')
-        .eq('course_id', COURSE_ID)
+        .eq('course_id', cursoDelJuego)
         .order('hole_number')
       const holes = hData || []
       setHoyos(holes)
