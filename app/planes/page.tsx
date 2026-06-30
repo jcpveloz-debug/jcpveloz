@@ -9,8 +9,7 @@ const PLANES = [
   { id: 'mensual',   label: 'Mensual',   precio: '$229 MXN / mes',     nota: '30 días gratis, luego', destacado: false },
   { id: 'quincenal', label: 'Quincenal', precio: '$119 MXN / quincena', nota: '',                      destacado: false },
   { id: 'semanal',   label: 'Semanal',   precio: '$79 MXN / semana',   nota: '',                       destacado: false },
-  { id: 'ronda',     label: 'Por Ronda', precio: '$59 MXN / ronda',    nota: '',                       destacado: false },
-]
+  { id: 'ronda',     label: 'Por Ronda', precio: '$240 MXN / ronda',   nota: 'Grupo de 4 a 6 jugadores', destacado: false },]
 
 // ====== FEATURES: qué trae Free vs Premium ======
 const FEATURES = [
