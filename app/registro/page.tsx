@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function RegistroPage() {
@@ -12,6 +13,7 @@ export default function RegistroPage() {
   const [pin2, setPin2] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   function planDesdeURL(): string {
     if (typeof window === 'undefined') return ''
@@ -65,7 +67,7 @@ export default function RegistroPage() {
       } catch (_) {}
 
       // Entra al menú
-      window.location.href = '/dashboard'
+      router.push('/dashboard')
     } catch (err: any) {
       setError('Error al registrar: ' + (err?.message || err))
       setGuardando(false)
