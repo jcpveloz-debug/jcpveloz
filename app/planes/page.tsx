@@ -16,10 +16,10 @@ const FEATURES = [
   { txt: 'Scorecard digital',                       free: true,  prem: true },
   { txt: 'Cálculo automático de HCP',               free: true,  prem: true },
   { txt: 'Juega con tus amigos',                    free: true,  prem: true },
-  { txt: 'Los 5 campos de Monterrey',               free: false, prem: true },
-  { txt: 'Todos los formatos de juego',             free: false, prem: true },
-  { txt: 'Ranking en vivo',                         free: false, prem: true },
-  { txt: 'Estadísticas de tu juego',                free: false, prem: true },
+  { txt: 'Los 5 campos de Monterrey',               free: true, prem: true },
+  { txt: 'Todos los formatos de juego',             free: true, prem: true },
+  { txt: 'Ranking en vivo',                         free: true, prem: true },
+  { txt: 'Estadísticas de tu juego',                free: true, prem: true },
 ]
 
 export default function PlanesPage() {
