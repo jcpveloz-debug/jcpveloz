@@ -16,6 +16,7 @@ interface Item {
   status: string
   numJugadores: number  // para juego: jugadores; para torneo: num duelos
   rondaIds?: string[]   // ids de las rondas del torneo (para borrar)
+  campo?: string        // nombre del campo del juego
 }
 
 const FORMATOS: Record<string, { icon: string; label: string }> = {
@@ -46,14 +47,18 @@ export default function JuegosPage() {
 
   async function cargar() {
     setLoading(true)
-    const { data: rData } = await supabase
+const { data: rData } = await supabase
       .from('game_rounds')
-      .select('id, name, date, type, format, status, tournament_group, created_at')
-      .eq('club_id', CLUB_ID)
+      .select('id, name, date, type, format, status, tournament_group, created_at, course_id')
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
-
     const rondasBase = rData || []
+    // traer nombres de los campos (para mostrar de qué campo es cada juego)
+    const { data: cursosData } = await supabase
+      .from('golf_courses')
+      .select('id, name')
+    const nombreCampo: Record<string, string> = {}
+    ;(cursosData || []).forEach(c => { nombreCampo[c.id] = c.name })
 
     // separar: rondas sueltas vs rondas de torneo (con tournament_group)
     const sueltas = rondasBase.filter(r => !r.tournament_group)
@@ -67,9 +72,10 @@ export default function JuegosPage() {
         .from('game_round_players')
         .select('*', { count: 'exact', head: true })
         .eq('game_round_id', r.id)
-      lista.push({
+lista.push({
         tipo: 'juego', id: r.id, name: r.name, date: r.date, type: r.type,
         format: r.format, status: r.status, numJugadores: count ?? 0,
+        campo: nombreCampo[r.course_id] || '',
       })
     }
 
@@ -83,10 +89,11 @@ export default function JuegosPage() {
     Object.entries(grupos).forEach(([g, rondas]) => {
       // usar la fecha de la primera ronda
       const primera = rondas[0]
-      lista.push({
+lista.push({
         tipo: 'torneo', id: g, name: 'Torneo Match Play', date: primera.date,
         type: primera.type, format: 'match_multiple', status: primera.status,
         numJugadores: rondas.length, rondaIds: rondas.map(r => r.id),
+        campo: nombreCampo[primera.course_id] || '',
       })
     })
 
@@ -184,6 +191,11 @@ export default function JuegosPage() {
                     <div style={{ fontSize: 26, flexShrink: 0 }}>{f.icon}</div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
+{r.campo && (
+                        <div style={{ fontSize: 11, color: '#F39C12', marginTop: 2, fontWeight: 'bold' }}>
+                          ⛳ {r.campo}
+                        </div>
+                      )}
                       <div style={{ fontSize: 11, color: '#81c784', marginTop: 2 }}>
                         {r.date} · {esTorneo ? `${r.numJugadores} duelo${r.numJugadores !== 1 ? 's' : ''}` : `${r.numJugadores} jugador${r.numJugadores !== 1 ? 'es' : ''}`}
                         <span style={{ textTransform: 'capitalize' }}> · {r.type}</span>
