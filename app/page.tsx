@@ -31,7 +31,13 @@ export default function Home() {
             }}>Prueba GRATIS 30 días</span>
           </div>
         </div>
-
+{/* Enlace para quien ya tiene cuenta */}
+        <div style={{ textAlign: 'center', padding: '4px 0 0' }}>
+          <a href="/entrar" style={{ fontSize: 13, color: '#2ECC71', textDecoration: 'underline' }}>
+            ¿Ya tienes cuenta? Entra aquí
+          </a>
+        </div>
+        
         {/* Hero */}
         <section style={{ textAlign: 'center', padding: '24px 0 8px' }}>
           <div style={{ fontSize: 10, letterSpacing: 4, color: '#81c784', textTransform: 'uppercase', marginBottom: 18 }}>
