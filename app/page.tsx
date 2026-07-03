@@ -14,22 +14,17 @@ export default function Home() {
     }}>
       <div style={{ maxWidth: 440, margin: '0 auto', padding: '0 20px 50px' }}>
 
-        {/* Encabezado tipo ficha de app */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '24px 0 18px' }}>
-          <div style={{
-            width: 62, height: 62, borderRadius: 16, flexShrink: 0,
-            border: '1px solid #2ECC7133', background: 'linear-gradient(135deg,#1a3a1f,#0d2410)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 8, color: '#81c784', textAlign: 'center', lineHeight: 1.15, letterSpacing: 1,
-          }}>LOGO<br />KRITER</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 19, fontWeight: 'bold', letterSpacing: .3 }}>Kriter Golf Club</div>
-            <div style={{ fontSize: 12, color: '#81c784', marginTop: 3 }}>Tu scorecard digital</div>
-            <span style={{
-              marginTop: 7, display: 'inline-block', fontSize: 10, color: '#2ECC71',
-              border: '1px solid #2ECC71', borderRadius: 20, padding: '2px 10px', letterSpacing: .5,
-            }}>Prueba GRATIS 30 días</span>
-          </div>
+{/* Encabezado tipo marca */}
+        <div style={{ textAlign: 'center', padding: '30px 0 20px' }}>
+          <img src="/logo-kriter.png" alt="Kriter Golf Club" style={{
+            width: 100, height: 100, objectFit: 'contain', marginBottom: 8,
+          }} />
+          <div style={{ fontSize: 14, fontWeight: 400, letterSpacing: .5, color: '#F39C12' }}>Kriter Golf Club</div>
+          <div style={{ fontSize: 12, color: '#81c784', marginTop: 3 }}>Tu scorecard digital</div>
+          <span style={{
+            marginTop: 12, display: 'inline-block', fontSize: 11, color: '#2ECC71',
+            border: '1px solid #2ECC71', borderRadius: 20, padding: '4px 14px', letterSpacing: .5,
+          }}>Prueba GRATIS 30 días</span>
         </div>
 {/* Enlace para quien ya tiene cuenta */}
         <div style={{ textAlign: 'center', padding: '4px 0 0' }}>
