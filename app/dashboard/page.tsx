@@ -39,11 +39,11 @@ export default function DashboardPage() {
   }
 
   // items activos (con pantalla real)
-  const items = [
-    { icon: '⛳', label: 'Nuevo Juego', desc: 'Iniciar una ronda', href: '/juego/nuevo' },
-    { icon: '📊', label: 'Leaderboard', desc: 'Matches Fourball de hoy', href: '/leaderboard-fourball' },
-    { icon: '📋', label: 'Mis Juegos', desc: 'Historial de rondas', href: '/juegos' },
-    { icon: '👥', label: 'Jugadores', desc: 'Gestionar jugadores', href: '/jugadores' },
+const items = [
+    { paso: 1, icon: '👥', label: 'Jugadores', desc: 'Registra jugadores o grupos', href: '/jugadores' },
+    { paso: 2, icon: '⛳', label: 'Nuevo Juego', desc: 'Inicia una ronda', href: '/juego/nuevo' },
+    { paso: 3, icon: '📊', label: 'Leaderboard', desc: 'Resultados en vivo', href: '/leaderboard-fourball' },
+    { paso: 4, icon: '📋', label: 'Mis Juegos', desc: 'Historial de rondas', href: '/juegos' },
   ]
 
   // items próximamente (sin pantalla aún)
@@ -149,14 +149,21 @@ export default function DashboardPage() {
         <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 12 }}>Menú Principal</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {items.map((item, i) => (
+{items.map((item, i) => (
             <div key={i}
               onClick={() => window.location.href = item.href + adminSuffix}
               style={{
                 background: '#1a2e1d', borderRadius: 12, padding: '16px',
-                border: '1px solid #2ECC7122', cursor: 'pointer',
+                border: '1px solid #2ECC7122', cursor: 'pointer', position: 'relative',
               }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</div>
+              <div style={{
+                position: 'absolute', top: 8, left: 8,
+                width: 20, height: 20, borderRadius: '50%',
+                background: '#F39C12', color: '#0a1a0f',
+                fontSize: 12, fontWeight: 'bold',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{item.paso}</div>
+              <div style={{ fontSize: 24, marginBottom: 8, textAlign: 'right' }}>{item.icon}</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{item.label}</div>
               <div style={{ fontSize: 11, color: '#81c784' }}>{item.desc}</div>
             </div>

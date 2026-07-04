@@ -28,7 +28,7 @@ export default function Home() {
         </div>
 {/* Enlace para quien ya tiene cuenta */}
         <div style={{ textAlign: 'center', padding: '4px 0 0' }}>
-          <a href="/entrar" style={{ fontSize: 13, color: '#2ECC71', textDecoration: 'underline' }}>
+          <a href="/entrar" style={{ fontSize: 16, color: '#F39C12', textDecoration: 'underline', fontWeight: 'bold' }}>
             ¿Ya tienes cuenta? Entra aquí
           </a>
         </div>

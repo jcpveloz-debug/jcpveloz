@@ -11,6 +11,7 @@ interface Jugador {
   id: string
   nombre: string
   hcp: number
+  integrantes?: string
 }
 interface Hoyo { hole_number: number; par: number; si: number }
 
@@ -94,14 +95,14 @@ export default function TarjetaStrokePage() {
       let jugs: Jugador[] = []
       if (grp && grp.length > 0) {
         const ids = grp.map(g => g.player_id)
-        const { data: pData } = await supabase
+const { data: pData } = await supabase
           .from('players')
-          .select('id, golf_name, hcp_base')
+          .select('id, golf_name, hcp_base, integrantes')
           .in('id', ids)
         jugs = grp.map(g => {
           const p = pData?.find(x => x.id === g.player_id)
           const hcp = g.hcp_index !== null && g.hcp_index !== undefined ? g.hcp_index : (p?.hcp_base ?? 0)
-          return { id: g.player_id, nombre: p?.golf_name || 'Jugador', hcp }
+          return { id: g.player_id, nombre: p?.golf_name || 'Jugador', hcp, integrantes: p?.integrantes || '' }
         })
       }
       setJugadores(jugs)
@@ -134,7 +135,7 @@ export default function TarjetaStrokePage() {
     </div>
   )
 
-  if (!gameId || jugadores.length < 2) return (
+  if (!gameId || jugadores.length < 1) return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#e8f5e9', fontFamily: 'Georgia, serif', padding: 24, textAlign: 'center' }}>
       <div style={{ fontSize: 16, marginBottom: 16 }}>No se encontró el juego.</div>
       <button onClick={() => window.location.href = '/dashboard'} style={{ background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px 20px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontWeight: 'bold' }}>← Dashboard</button>
@@ -280,7 +281,12 @@ export default function TarjetaStrokePage() {
                 const netoTr = netoTramo(j, tramoActual)
                 return (
                   <tr key={j.id} style={{ background: idx % 2 === 0 ? '#162a1a' : 'transparent' }}>
-                    <td style={{ position: 'sticky', left: 0, background: idx % 2 === 0 ? '#162a1a' : '#0a1a0f', padding: '6px 10px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap', zIndex: 2 }}>{j.nombre.split(' ')[0]}</td>
+<td style={{ position: 'sticky', left: 0, background: idx % 2 === 0 ? '#162a1a' : '#0a1a0f', padding: '6px 10px', textAlign: 'left', whiteSpace: 'nowrap', zIndex: 2 }}>
+                      <div style={{ fontWeight: 'bold' }}>{j.integrantes ? j.nombre : j.nombre.split(' ')[0]}</div>
+                      {j.integrantes && (
+                        <div style={{ fontSize: 9, color: '#81c784', fontWeight: 'normal', marginTop: 2 }}>{j.integrantes}</div>
+                      )}
+                    </td>
                     {tramoActual.map(h => {
                       const g = getScore(j.id, h.hole_number)
                       const v = ventajaEnHoyo(j.hcp, h.si)

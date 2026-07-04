@@ -27,6 +27,7 @@ export default function JugadoresPage() {
   const [mostrarForm, setMostrarForm] = useState(false)
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevoHcp, setNuevoHcp] = useState('')
+  const [nuevoIntegrantes, setNuevoIntegrantes] = useState('')
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
@@ -57,13 +58,15 @@ export default function JugadoresPage() {
 
   const adminSuffix = esAdmin ? '?admin=1' : ''
 
-  async function cargarJugadores(clubId: string) {
+async function cargarJugadores(clubId: string) {
     const { data } = await supabase
       .from('players')
-      .select('id, golf_name, hcp_base, active')
+      .select('id, golf_name, hcp_base, active, integrantes')
       .eq('club_id', clubId)
       .order('golf_name')
-    setJugadores(data || [])
+    // Mostrar solo los GRUPOS (los que tienen integrantes)
+    const soloGrupos = (data || []).filter(j => j.integrantes && j.integrantes.trim() !== '')
+    setJugadores(soloGrupos)
   }
 
   async function cambiarClub(clubId: string) {
@@ -81,15 +84,17 @@ export default function JugadoresPage() {
     if (isNaN(hcpNum)) { alert('El HCP debe ser un número (ej. 12.5).'); return }
     setGuardando(true)
     try {
-      const { error } = await supabase.from('players').insert({
+const { error } = await supabase.from('players').insert({
         golf_name: nuevoNombre.trim(),
         hcp_base: hcpNum,
         club_id: clubSel,
         active: true,
+        integrantes: nuevoIntegrantes.trim() || null,
       })
       if (error) throw error
       setNuevoNombre('')
       setNuevoHcp('')
+      setNuevoIntegrantes('')
       setMostrarForm(false)
       await cargarJugadores(clubSel)
     } catch (err: any) {
@@ -193,12 +198,20 @@ export default function JugadoresPage() {
               placeholder="Ej. Juan Pérez"
               style={{ width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8, padding: '10px 12px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14, boxSizing: 'border-box', marginBottom: 12 }}
             />
-            <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>HCP (ej. 12.5)</div>
+<div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>HCP (ej. 12.5)</div>
             <input
               type="number" step="0.1"
               value={nuevoHcp}
               onChange={e => setNuevoHcp(e.target.value)}
               placeholder="0"
+              style={{ width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8, padding: '10px 12px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14, boxSizing: 'border-box', marginBottom: 14 }}
+            />
+            <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>INTEGRANTES (solo si es un grupo)</div>
+            <div style={{ fontSize: 10, color: '#4a7a50', marginBottom: 6 }}>Sepáralos con comas. Déjalo vacío si es un jugador normal.</div>
+            <input
+              value={nuevoIntegrantes}
+              onChange={e => setNuevoIntegrantes(e.target.value)}
+              placeholder="Ej. Julio, Juan, Arturo, José"
               style={{ width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8, padding: '10px 12px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14, boxSizing: 'border-box', marginBottom: 14 }}
             />
             <button onClick={agregarJugador} disabled={guardando} style={{
@@ -210,7 +223,7 @@ export default function JugadoresPage() {
           </div>
         )}
 
-        {/* Lista */}
+{/* Lista */}
         {loading ? (
           <div style={{ textAlign: 'center', color: '#2ECC71', padding: 40 }}>Cargando...</div>
         ) : lista.length === 0 ? (
@@ -243,6 +256,19 @@ export default function JugadoresPage() {
             </div>
           ))
         )}
+
+        {/* Botón Siguiente: va directo al Paso 2 (Nuevo Juego) */}
+        <button
+          onClick={() => window.location.href = '/juego/nuevo' + adminSuffix}
+          style={{
+            width: '100%', marginTop: 20, background: '#2ECC71', color: '#0a1a0f',
+            border: 'none', borderRadius: 12, padding: '16px', cursor: 'pointer',
+            fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: 'bold',
+            boxShadow: '0 8px 24px rgba(46,204,113,.3)',
+          }}
+        >
+          Siguiente: Nuevo Juego →
+        </button>
       </div>
     </div>
   )

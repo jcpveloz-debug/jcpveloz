@@ -155,10 +155,7 @@ export default function NuevoJuegoPage() {
   }
 
   async function handleArrancar() {
-    if (!esAdmin) {
-      alert('👁️ Estás en modo solo lectura.\n\nPara crear juegos, el organizador debe activar el modo edición con su PIN desde el Dashboard.')
-      return
-    }
+
     if (!campoSel) {
       alert('Selecciona un campo antes de arrancar.')
       return
@@ -217,7 +214,7 @@ export default function NuevoJuegoPage() {
       ? !!(jugador1 && jugador2)
       : formato === 'match_fourball'
         ? seleccionados.length === 4
-        : seleccionadosStroke.length >= 2
+        : seleccionadosStroke.length >= 1
 
   const parejasCompletas = parejaA.length === 2 && parejaB.length === 2
 
