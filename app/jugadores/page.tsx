@@ -161,7 +161,7 @@ const { error } = await supabase.from('players').insert({
           </select>
         </div>
 
-        {/* Controles */}
+{/* Controles */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
           <button onClick={() => setVerArchivados(false)} style={{
             flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif', fontWeight: 'bold',
@@ -175,8 +175,8 @@ const { error } = await supabase.from('players').insert({
           }}>Archivados ({archivados.length})</button>
         </div>
 
-        {/* Botón agregar (solo admin, solo en vista activos) */}
-        {esAdmin && !verArchivados && (
+        {/* Botón agregar (cualquiera puede, solo en vista activos) */}
+        {!verArchivados && (
           <button onClick={() => setMostrarForm(!mostrarForm)} style={{
             width: '100%', marginBottom: 16, background: mostrarForm ? '#4a7a50' : '#2ECC71', color: '#0a1a0f',
             border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
@@ -186,7 +186,7 @@ const { error } = await supabase.from('players').insert({
         )}
 
         {/* Formulario */}
-        {esAdmin && mostrarForm && !verArchivados && (
+        {mostrarForm && !verArchivados && (
           <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7144', marginBottom: 16 }}>
             <div style={{ fontSize: 10, color: '#F39C12', marginBottom: 10, letterSpacing: 1 }}>
               Se agregará a: {nombreCampoSel}
@@ -205,8 +205,7 @@ const { error } = await supabase.from('players').insert({
               onChange={e => setNuevoHcp(e.target.value)}
               placeholder="0"
               style={{ width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8, padding: '10px 12px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14, boxSizing: 'border-box', marginBottom: 14 }}
-            />
-            <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>INTEGRANTES (solo si es un grupo)</div>
+            />            <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>INTEGRANTES (solo si es un grupo)</div>
             <div style={{ fontSize: 10, color: '#4a7a50', marginBottom: 6 }}>Sepáralos con comas. Déjalo vacío si es un jugador normal.</div>
             <input
               value={nuevoIntegrantes}

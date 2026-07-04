@@ -29,7 +29,7 @@ export default function NuevoJuegoPage() {
   const [campoSel, setCampoSel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
-  const [esAdmin, setEsAdmin] = useState(false)
+  const [esAdmin, setEsAdmin] = useState(true)
 
   // Singles
   const [jugador1, setJugador1] = useState<string | null>(null)
