@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 const ADMIN_PIN = '9080'
 
 export default function DashboardPage() {
-  const [user] = useState({ email: 'jugador@golf.com', user_metadata: { full_name: 'Bienvenido' } })
+  const [nombreUser, setNombreUser] = useState('Bienvenido')
   const [esAdmin, setEsAdmin] = useState(false)
   const [mostrarPin, setMostrarPin] = useState(false)
   const [pin, setPin] = useState('')
@@ -16,14 +16,18 @@ export default function DashboardPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('admin') === '1') setEsAdmin(true)
+    try {
+      const u = JSON.parse(localStorage.getItem('kgc_user') || '{}')
+      if (u && u.nombre) setNombreUser(u.nombre)
+    } catch (_) {}
   }, [])
 
   const adminSuffix = esAdmin ? '?admin=1' : ''
 
   function compartirWhatsApp() {
     const url = 'https://kriter-golf-club.vercel.app'
-    const texto = `⛳ Únete a Kriter Golf Club!\n\nEntra directo aquí:\n${url}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank')
+    const texto = 'Unete a Kriter Golf Club!\n\nEntra directo aqui:\n' + url
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank')
   }
 
   function verificarPin() {
@@ -38,18 +42,15 @@ export default function DashboardPage() {
     window.location.href = '/dashboard'
   }
 
-  // items activos (con pantalla real)
-const items = [
-    { paso: 1, icon: '👥', label: 'Jugadores', desc: 'Registra jugadores o grupos', href: '/jugadores' },
-    { paso: 2, icon: '⛳', label: 'Nuevo Juego', desc: 'Inicia una ronda', href: '/juego/nuevo' },
-    { paso: 3, icon: '📊', label: 'Leaderboard', desc: 'Resultados en vivo', href: '/leaderboard-fourball' },
-    { paso: 4, icon: '📋', label: 'Mis Juegos', desc: 'Historial de rondas', href: '/juegos' },
+  const items = [
+    { paso: 1, icon: 'GOLF', label: 'Nuevo Juego', desc: 'Inicia una ronda', href: '/juego/nuevo' },
+    { paso: 2, icon: 'RANK', label: 'Leaderboard', desc: 'Resultados en vivo', href: '/leaderboard-fourball' },
+    { paso: 3, icon: 'LIST', label: 'Mis Juegos', desc: 'Historial de rondas', href: '/juegos' },
   ]
 
-  // items próximamente (sin pantalla aún)
   const proximamente = [
-    { icon: '⚙️', label: 'Mi Perfil', desc: 'Datos y HCP' },
-    { icon: '🏌️', label: 'Mi Club', desc: 'Info del club' },
+    { icon: 'PERFIL', label: 'Mi Perfil', desc: 'Datos y HCP' },
+    { icon: 'CLUB', label: 'Mi Club', desc: 'Info del club' },
   ]
 
   return (
@@ -71,32 +72,32 @@ const items = [
             background: '#25D366', border: 'none', borderRadius: 8, color: '#fff',
             padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif', fontWeight: 'bold',
           }}>
-            📲 WhatsApp
+            WhatsApp
           </button>
           {esAdmin ? (
             <button onClick={salirAdmin} style={{
               background: '#F39C12', border: 'none', borderRadius: 8, color: '#0a1a0f',
               padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif', fontWeight: 'bold',
             }}>
-              🔓 Salir Admin
+              Salir Admin
             </button>
           ) : (
             <button onClick={() => { setMostrarPin(true); setError(''); setPin('') }} style={{
               background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71',
               padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
             }}>
-              🔒 Admin
+              Admin
             </button>
           )}
         </div>
       </div>
 
       <div style={{
-        background: esAdmin ? '#2ECC7122' : '#F39C1222',
-        color: esAdmin ? '#2ECC71' : '#F39C12',
+        background: '#2ECC7122',
+        color: '#2ECC71',
         textAlign: 'center', padding: '6px', fontSize: 12, letterSpacing: 1,
       }}>
-        {esAdmin ? '✏️ Modo Edición — puedes crear y capturar' : '👁️ Modo Solo Lectura — solo puedes ver'}
+        Listo para jugar
       </div>
 
       {mostrarPin && (
@@ -106,14 +107,14 @@ const items = [
         }}>
           <div style={{ background: '#1a2e1d', borderRadius: 16, padding: 24, width: '100%', maxWidth: 280, border: '1px solid #2ECC71' }}>
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>🔒 Acceso Admin</div>
-              <div style={{ fontSize: 11, color: '#81c784', marginTop: 4 }}>Ingresa tu PIN de 4 dígitos</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#2ECC71' }}>Acceso Admin</div>
+              <div style={{ fontSize: 11, color: '#81c784', marginTop: 4 }}>Ingresa tu PIN de 4 digitos</div>
             </div>
             <input
               type="password" inputMode="numeric" maxLength={4} value={pin}
               onChange={e => { setPin(e.target.value); setError('') }}
               onKeyDown={e => { if (e.key === 'Enter') verificarPin() }}
-              placeholder="••••" autoFocus
+              placeholder="----" autoFocus
               style={{
                 width: '100%', background: '#0d2410', border: '1px solid #2ECC7144',
                 borderRadius: 8, color: '#e8f5e9', textAlign: 'center', fontSize: 24,
@@ -142,14 +143,13 @@ const items = [
       <div style={{ padding: '24px 16px' }}>
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '20px', border: '1px solid #2ECC7133', marginBottom: 20 }}>
           <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 8 }}>Bienvenido</div>
-          <div style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 4 }}>{user?.user_metadata?.full_name}</div>
-          <div style={{ fontSize: 13, color: '#81c784' }}>{user?.email}</div>
+          <div style={{ fontSize: 20, fontWeight: 'bold' }}>{nombreUser}</div>
         </div>
 
-        <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 12 }}>Menú Principal</div>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 12 }}>Menu Principal</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-{items.map((item, i) => (
+          {items.map((item, i) => (
             <div key={i}
               onClick={() => window.location.href = item.href + adminSuffix}
               style={{
@@ -158,25 +158,22 @@ const items = [
               }}>
               <div style={{
                 position: 'absolute', top: 8, left: 8,
-                width: 20, height: 20, borderRadius: '50%',
+                width: 22, height: 22, borderRadius: '50%',
                 background: '#F39C12', color: '#0a1a0f',
-                fontSize: 12, fontWeight: 'bold',
+                fontSize: 13, fontWeight: 'bold',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{item.paso}</div>
-              <div style={{ fontSize: 24, marginBottom: 8, textAlign: 'right' }}>{item.icon}</div>
-              <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4, marginTop: 18 }}>{item.label}</div>
               <div style={{ fontSize: 11, color: '#81c784' }}>{item.desc}</div>
             </div>
           ))}
 
-          {/* Próximamente — apagados, no clicables */}
           {proximamente.map((item, i) => (
             <div key={`prox-${i}`}
               style={{
                 background: '#12201580', borderRadius: 12, padding: '16px',
                 border: '1px dashed #2ECC7122', cursor: 'default', opacity: 0.5, position: 'relative',
               }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{item.label}</div>
               <div style={{ fontSize: 11, color: '#81c784' }}>{item.desc}</div>
               <div style={{ position: 'absolute', top: 10, right: 10, fontSize: 8, letterSpacing: 1, color: '#F39C12', textTransform: 'uppercase', border: '1px solid #F39C1244', borderRadius: 4, padding: '2px 5px' }}>Pronto</div>

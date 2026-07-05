@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 export default function RegistroPage() {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
-  const [correo, setCorreo] = useState('')
+  const [hcp, setHcp] = useState('')
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -25,15 +25,16 @@ export default function RegistroPage() {
 
     // Validaciones
     if (!nombre.trim()) { setError('Escribe tu nombre.'); return }
-    const telLimpio = telefono.replace(/\D/g, '')  // solo dígitos
-    if (telLimpio.length < 10) { setError('Escribe un teléfono válido (10 dígitos).'); return }
-    if (!correo.trim() || !correo.includes('@')) { setError('Escribe un correo válido.'); return }
-    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { setError('El PIN debe ser de 4 dígitos.'); return }
+    const telLimpio = telefono.replace(/\D/g, '')  // solo digitos
+    if (telLimpio.length < 10) { setError('Escribe un telefono valido (10 digitos).'); return }
+    const hcpNum = hcp === '' ? 0 : Number(hcp)
+    if (isNaN(hcpNum)) { setError('El HCP debe ser un numero (ej. 12.5).'); return }
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { setError('El PIN debe ser de 4 digitos.'); return }
     if (pin !== pin2) { setError('Los PIN no coinciden.'); return }
 
     setGuardando(true)
     try {
-      // Verificar que no exista ya alguien con el mismo PIN + últimos 4 del teléfono
+      // Verificar que no exista ya alguien con el mismo PIN + ultimos 4 del telefono
       const ultimos4 = telLimpio.slice(-4)
       const { data: existentes } = await supabase
         .from('players')
@@ -45,28 +46,27 @@ export default function RegistroPage() {
         return t.slice(-4) === ultimos4
       })
       if (choca) {
-        setError('Ya existe una cuenta con ese PIN y teléfono. Intenta con otro PIN.')
+        setError('Ya existe una cuenta con ese PIN y telefono. Intenta con otro PIN.')
         setGuardando(false)
         return
       }
 
-      // Crear el jugador (registro de acceso). Sin campo (club_id null) — el campo se elige al jugar.
+      // Crear el jugador (registro de acceso). Sin campo (club_id null) - el campo se elige al jugar.
       const { error: e1 } = await supabase.from('players').insert({
         golf_name: nombre.trim(),
         phone: telLimpio,
-        email: correo.trim(),
         pin: pin,
-        hcp_base: 0,
+        hcp_base: hcpNum,
         active: true,
       })
       if (e1) throw e1
 
-      // Guardar sesión simple en el navegador para recordarlo
+      // Guardar sesion simple en el navegador para recordarlo
       try {
         localStorage.setItem('kgc_user', JSON.stringify({ nombre: nombre.trim(), tel4: ultimos4 }))
       } catch (_) {}
 
-      // Entra al menú
+      // Entra al menu
       router.push('/dashboard')
     } catch (err: any) {
       setError('Error al registrar: ' + (err?.message || err))
@@ -88,7 +88,7 @@ export default function RegistroPage() {
           <button onClick={() => window.location.href = '/planes'} style={{
             background: 'transparent', border: '1px solid #2ECC7144', color: '#81c784',
             borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
-          }}>← Volver</button>
+          }}>&#8592; Volver</button>
         </div>
 
         {/* Encabezado */}
@@ -98,7 +98,7 @@ export default function RegistroPage() {
           </div>
           <div style={{ fontSize: 26, fontWeight: 'bold' }}>Crea tu cuenta</div>
           <div style={{ fontSize: 13, color: '#81c784', marginTop: 8 }}>
-            30 días gratis · Sin tarjeta de crédito ni débito
+            30 dias gratis &middot; Sin tarjeta de credito ni debito
           </div>
         </div>
 
@@ -110,24 +110,24 @@ export default function RegistroPage() {
               style={inputStyle} />
           </Campo>
 
-          <Campo label="TELÉFONO">
-            <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="10 dígitos"
+          <Campo label="TELEFONO">
+            <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="10 digitos"
               inputMode="numeric" style={inputStyle} />
           </Campo>
 
-          <Campo label="CORREO">
-            <input value={correo} onChange={e => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com"
-              inputMode="email" style={inputStyle} />
+          <Campo label="HCP (ej. 12.5)">
+            <input value={hcp} onChange={e => setHcp(e.target.value)} placeholder="0"
+              type="number" step="0.1" inputMode="decimal" style={inputStyle} />
           </Campo>
 
-          <Campo label="PIN (4 dígitos)">
+          <Campo label="PIN (4 digitos)">
             <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              placeholder="••••" inputMode="numeric" type="password" style={inputStyle} />
+              placeholder="&bull;&bull;&bull;&bull;" inputMode="numeric" type="password" style={inputStyle} />
           </Campo>
 
           <Campo label="CONFIRMA TU PIN">
             <input value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              placeholder="••••" inputMode="numeric" type="password" style={inputStyle} />
+              placeholder="&bull;&bull;&bull;&bull;" inputMode="numeric" type="password" style={inputStyle} />
           </Campo>
 
           {error && (
@@ -142,12 +142,12 @@ export default function RegistroPage() {
             fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: 'bold', marginTop: 6,
             boxShadow: '0 10px 30px rgba(46,204,113,.25)',
           }}>
-            {guardando ? 'Creando tu cuenta...' : 'Iniciar mis 30 días gratis'}
+            {guardando ? 'Creando tu cuenta...' : 'Iniciar mis 30 dias gratis'}
           </button>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 16, fontSize: 11, color: '#81c784', lineHeight: 1.6 }}>
-          Para entrar después usarás tu PIN<br />y los últimos 4 dígitos de tu teléfono.
+          Para entrar despues usaras tu PIN<br />y los ultimos 4 digitos de tu telefono.
         </div>
 
       </div>
