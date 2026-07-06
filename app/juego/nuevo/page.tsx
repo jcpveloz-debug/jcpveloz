@@ -398,13 +398,13 @@ export default function NuevoJuegoPage() {
                 </div>
               </div>
 
-              <div style={{ margin: '14px 0 0', paddingTop: 14, borderTop: '1px solid #2ECC7122' }}>
-                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>O TORNEO DE VARIAS PAREJAS</div>
-                <button onClick={() => window.location.href = '/juego/match-multiple' + adminSuffix} style={{
+<div style={{ margin: '14px 0 0', paddingTop: 14, borderTop: '1px solid #2ECC7122' }}>
+                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>O TORNEO DE PAREJAS</div>
+                <button onClick={() => window.location.href = '/juego/bola-baja' + adminSuffix} style={{
                   width: '100%', background: 'transparent', color: '#F39C12', border: '1px solid #F39C12',
                   borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
                 }}>
-                  Match Play Multiple
+                  Bola Baja en Parejas
                 </button>
               </div>
             </div>
