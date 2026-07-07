@@ -28,6 +28,7 @@ function romano(n: number): string {
 export default function BolaBajaPage() {
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [tipo, setTipo] = useState('informal')
+  const [pctHcp, setPctHcp] = useState('100')
   const [campos, setCampos] = useState<any[]>([])
   const [campoSel, setCampoSel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -133,8 +134,12 @@ export default function BolaBajaPage() {
       if (e1 || !ronda) throw e1 || new Error('No se creo el juego')
 
       // 2) Crear cada jugador en players (ligado al club) y luego a game_round_players
+      // El % de HCP lo define el organizador. Se ajusta cada HCP y se redondea al 0.5 mas cercano.
+      const pct = pctHcp === '' ? 100 : Number(pctHcp)
+      const factorPct = (isNaN(pct) ? 100 : pct) / 100
       const filas: any[] = []
       for (const j of jugadores) {
+        const hcpAjustado = Math.round((j.hcp * factorPct) * 2) / 2
         const { data: pl, error: ep } = await supabase.from('players').insert({
           golf_name: j.nombre,
           hcp_base: j.hcp,
@@ -146,7 +151,7 @@ export default function BolaBajaPage() {
           game_round_id: ronda.id,
           player_id: pl.id,
           club_id: campoSel.club_id,
-          hcp_index: j.hcp,
+          hcp_index: hcpAjustado,   // HCP ya ajustado por el % del torneo
           team_number: j.pareja,   // el numero de pareja
         })
       }
@@ -237,6 +242,21 @@ export default function BolaBajaPage() {
               <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={inputStyle} />
             </div>
 
+            <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #F39C1244', marginBottom: 20 }}>
+              <div style={{ fontSize: 11, color: '#F39C12', marginBottom: 8, letterSpacing: 1 }}>% DE HCP (regla del torneo)</div>
+              <div style={{ fontSize: 10, color: '#4a7a50', marginBottom: 8 }}>Define a que porcentaje del HCP se juega. 100 = HCP completo. Ej. 80 = ochenta por ciento.</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number" step="1" min="1" max="100"
+                  value={pctHcp}
+                  onChange={e => setPctHcp(e.target.value)}
+                  placeholder="100"
+                  style={{ ...inputStyle, marginBottom: 0 }}
+                />
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#F39C12' }}>%</span>
+              </div>
+            </div>
+
             <button onClick={() => setPaso(2)} style={{ width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 15, fontWeight: 'bold' }}>
               Siguiente
             </button>
@@ -272,6 +292,11 @@ export default function BolaBajaPage() {
                       <div>
                         <span style={{ fontSize: 14, fontWeight: 'bold' }}>{j.nombre}</span>
                         <span style={{ fontSize: 12, color: '#81c784', marginLeft: 8 }}>HCP {j.hcp}</span>
+                        {pctHcp !== '' && Number(pctHcp) !== 100 && !isNaN(Number(pctHcp)) && (
+                          <span style={{ fontSize: 11, color: '#F39C12', marginLeft: 8 }}>
+                            &rarr; juega {Math.round((j.hcp * Number(pctHcp) / 100) * 2) / 2} ({pctHcp}%)
+                          </span>
+                        )}
                       </div>
                       <button onClick={() => quitarJugador(j.id)} style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c55', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 11 }}>Quitar</button>
                     </div>
