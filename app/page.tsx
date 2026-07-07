@@ -24,7 +24,7 @@ export default function Home() {
           <span style={{
             marginTop: 12, display: 'inline-block', fontSize: 11, color: '#2ECC71',
             border: '1px solid #2ECC71', borderRadius: 20, padding: '4px 14px', letterSpacing: .5,
-          }}>Prueba GRATIS 30 días</span>
+          }}>Prueba GRATIS 15 días</span>
         </div>
 {/* Enlace para quien ya tiene cuenta */}
         <div style={{ textAlign: 'center', padding: '4px 0 0' }}>
@@ -107,7 +107,7 @@ export default function Home() {
         {/* Features */}
         <section style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 1, border: '1px solid #2ECC7133', borderRadius: 16, overflow: 'hidden' }}>
           {[
-            { ic: '⛳', ft: 'Varios formatos', fd: 'Stroke Play, Stableford, Match Play y torneos en grupos de 2 a 6.' },
+            { ic: '⛳', ft: 'Varios formatos', fd: 'Stroke Play, Stableford, Match Play, Bola Baja en Parejas y Torneos de Grupos.' },
             { ic: '🧮', ft: 'Cálculos automáticos', fd: 'Tu HCP, tu neto y tus ventajas por hoyo, sin sacar la calculadora.' },
             { ic: '📊', ft: 'Estadísticas de tu juego', fd: 'Ve cómo vienes ronda con ronda y dónde ganas o pierdes golpes.' },
             { ic: '🏆', ft: 'Ranking en vivo', fd: 'El marcador de tu grupo se actualiza solo mientras juegan.' },
@@ -144,7 +144,7 @@ export default function Home() {
             fontSize: 19, fontWeight: 'bold', letterSpacing: .4, textDecoration: 'none',
             boxShadow: '0 10px 30px rgba(46,204,113,.32)',
           }}>Inicia Free Trial</a>
-          <div style={{ marginTop: 13, fontSize: 12.5, color: '#81c784' }}>Solo tu nombre, teléfono y correo</div>
+          <div style={{ marginTop: 13, fontSize: 12.5, color: '#81c784' }}>Solo tu nombre, teléfono y HCP</div>
         </div>
 
         <div style={{ marginTop: 40, textAlign: 'center', fontSize: 10, color: '#4a6450', letterSpacing: .5, lineHeight: 1.7 }}>

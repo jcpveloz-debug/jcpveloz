@@ -2,140 +2,170 @@
 
 export const dynamic = 'force-dynamic'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
-// ====== PRECIOS DE EJEMPLO — Julio los ajusta cuando quiera ======
-const PLANES = [
-  { id: 'anual',     label: 'Anual',     precio: '$2,400 MXN / año',   nota: '30 días gratis, luego', destacado: true,  etiqueta: 'Mejor Valor' },
-  { id: 'mensual',   label: 'Mensual',   precio: '$229 MXN / mes',     nota: '30 días gratis, luego', destacado: false },
-  { id: 'quincenal', label: 'Quincenal', precio: '$119 MXN / quincena', nota: '',                      destacado: false },
-  { id: 'semanal',   label: 'Semanal',   precio: '$79 MXN / semana',   nota: '',                       destacado: false },
-  { id: 'ronda',     label: 'Por Ronda', precio: '$240 MXN / ronda',   nota: 'Grupo de 4 a 6 jugadores', destacado: false },]
+export default function RegistroPage() {
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [hcp, setHcp] = useState('')
+  const [pin, setPin] = useState('')
+  const [pin2, setPin2] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
 
-// ====== FEATURES: qué trae Free vs Premium ======
-const FEATURES = [
-  { txt: 'Scorecard digital',                       free: true,  prem: true },
-  { txt: 'Cálculo automático de HCP',               free: true,  prem: true },
-  { txt: 'Juega con tus amigos',                    free: true,  prem: true },
-  { txt: 'Los 5 campos de Monterrey',               free: true, prem: true },
-  { txt: 'Todos los formatos de juego',             free: true, prem: true },
-  { txt: 'Ranking en vivo',                         free: true, prem: true },
-  { txt: 'Estadísticas de tu juego',                free: true, prem: true },
-]
+  function planDesdeURL(): string {
+    if (typeof window === 'undefined') return ''
+    return new URLSearchParams(window.location.search).get('plan') || ''
+  }
 
-export default function PlanesPage() {
-  const [planSel, setPlanSel] = useState('anual')
+  async function registrar() {
+    setError('')
 
-  function iniciarTrial() {
-    // Lleva al registro (login). Mantiene el plan elegido por si se usa luego.
-    window.location.href = `/registro?plan=${planSel}`
+    // Validaciones
+    if (!nombre.trim()) { setError('Escribe tu nombre.'); return }
+    const telLimpio = telefono.replace(/\D/g, '')  // solo digitos
+    if (telLimpio.length < 10) { setError('Escribe un telefono valido (10 digitos).'); return }
+    const hcpNum = hcp === '' ? 0 : Number(hcp)
+    if (isNaN(hcpNum)) { setError('El HCP debe ser un numero (ej. 12.5).'); return }
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { setError('El PIN debe ser de 4 digitos.'); return }
+    if (pin !== pin2) { setError('Los PIN no coinciden.'); return }
+
+    setGuardando(true)
+    try {
+      // Verificar que no exista ya alguien con el mismo PIN + ultimos 4 del telefono
+      const ultimos4 = telLimpio.slice(-4)
+      const { data: existentes } = await supabase
+        .from('players')
+        .select('id, phone, pin')
+        .eq('pin', pin)
+
+      const choca = (existentes || []).some(p => {
+        const t = (p.phone || '').replace(/\D/g, '')
+        return t.slice(-4) === ultimos4
+      })
+      if (choca) {
+        setError('Ya existe una cuenta con ese PIN y telefono. Intenta con otro PIN.')
+        setGuardando(false)
+        return
+      }
+
+      // Crear el jugador (registro de acceso). Sin campo (club_id null) - el campo se elige al jugar.
+      const { error: e1 } = await supabase.from('players').insert({
+        golf_name: nombre.trim(),
+        phone: telLimpio,
+        pin: pin,
+        hcp_base: hcpNum,
+        active: true,
+      })
+      if (e1) throw e1
+
+      // Guardar sesion simple en el navegador para recordarlo
+      try {
+        localStorage.setItem('kgc_user', JSON.stringify({ nombre: nombre.trim(), tel4: ultimos4 }))
+      } catch (_) {}
+
+      // Entra al menu
+      router.push('/dashboard')
+    } catch (err: any) {
+      setError('Error al registrar: ' + (err?.message || err))
+      setGuardando(false)
+    }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9', paddingBottom: 40 }}>
+    <div style={{
+      minHeight: '100vh',
+      fontFamily: 'Georgia, serif',
+      color: '#e8f5e9',
+      background: 'radial-gradient(1200px 600px at 50% -10%, #16361f 0%, transparent 60%), #0a1a0f',
+    }}>
+      <div style={{ maxWidth: 440, margin: '0 auto', padding: '0 22px 50px' }}>
 
-      {/* Cerrar */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px 0' }}>
-        <button onClick={() => window.location.href = '/'} style={{
-          background: 'transparent', border: '1px solid #2ECC7144', color: '#81c784',
-          width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', fontSize: 16, fontFamily: 'Georgia, serif',
-        }}>✕</button>
-      </div>
+        {/* Cerrar / volver */}
+        <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '20px 0 0' }}>
+          <button onClick={() => window.location.href = '/planes'} style={{
+            background: 'transparent', border: '1px solid #2ECC7144', color: '#81c784',
+            borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
+          }}>&#8592; Volver</button>
+        </div>
 
-      {/* Encabezado */}
-      <div style={{ padding: '8px 24px 20px' }}>
-        <div style={{ fontSize: 12, letterSpacing: 3, color: '#81c784', textTransform: 'uppercase', marginBottom: 10 }}>
-          Kriter Golf Club Premium
-        </div>
-        <div style={{ fontSize: 30, fontWeight: 'bold', lineHeight: 1.15 }}>
-          Juega con confianza.
-        </div>
-        <div style={{ fontSize: 30, fontWeight: 'bold', color: '#2ECC71', fontStyle: 'italic', lineHeight: 1.15 }}>
-          Prueba 30 días gratis
-        </div>
-      </div>
-
-      {/* Tabla Free vs Premium */}
-      <div style={{ padding: '0 20px', marginBottom: 24 }}>
-        <div style={{ background: '#12241a', borderRadius: 16, border: '1px solid #2ECC7133', overflow: 'hidden' }}>
-          {/* encabezado de columnas */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #2ECC7122' }}>
-            <div style={{ flex: 1, fontSize: 15, fontWeight: 'bold', color: '#2ECC71' }}>Qué incluye</div>
-            <div style={{ width: 60, textAlign: 'center', fontSize: 12, color: '#81c784' }}>Free</div>
-            <div style={{ width: 70, textAlign: 'center', fontSize: 12, color: '#0a1a0f', fontWeight: 'bold', background: '#2ECC71', borderRadius: 8, padding: '4px 0' }}>Premium</div>
+        {/* Encabezado */}
+        <div style={{ textAlign: 'center', padding: '20px 0 24px' }}>
+          <div style={{ fontSize: 11, letterSpacing: 4, color: '#81c784', textTransform: 'uppercase', marginBottom: 12 }}>
+            Kriter Golf Club
           </div>
-          {/* filas */}
-          {FEATURES.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '13px 16px', borderBottom: i < FEATURES.length - 1 ? '1px solid #1d3324' : 'none' }}>
-              <div style={{ flex: 1, fontSize: 14 }}>{f.txt}</div>
-              <div style={{ width: 60, textAlign: 'center', color: f.free ? '#81c784' : '#2d4435', fontSize: 16, fontWeight: 'bold' }}>
-                {f.free ? '✓' : '–'}
-              </div>
-              <div style={{ width: 70, textAlign: 'center', color: '#2ECC71', fontSize: 16, fontWeight: 'bold' }}>
-                {f.prem ? '✓' : '–'}
-              </div>
+          <div style={{ fontSize: 26, fontWeight: 'bold' }}>Crea tu cuenta</div>
+          <div style={{ fontSize: 13, color: '#81c784', marginTop: 8 }}>
+            15 dias gratis &middot; Sin tarjeta de credito ni debito
+          </div>
+        </div>
+
+        {/* Formulario */}
+        <div style={{ background: '#12241a', borderRadius: 16, border: '1px solid #2ECC7133', padding: '20px 18px' }}>
+
+          <Campo label="NOMBRE">
+            <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Tu nombre"
+              style={inputStyle} />
+          </Campo>
+
+          <Campo label="TELEFONO">
+            <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="10 digitos"
+              inputMode="numeric" style={inputStyle} />
+          </Campo>
+
+          <Campo label="HCP (ej. 12.5)">
+            <input value={hcp} onChange={e => setHcp(e.target.value)} placeholder="0"
+              type="number" step="0.1" inputMode="decimal" style={inputStyle} />
+          </Campo>
+
+          <Campo label="PIN (4 digitos)">
+            <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="&bull;&bull;&bull;&bull;" inputMode="numeric" type="password" style={inputStyle} />
+          </Campo>
+
+          <Campo label="CONFIRMA TU PIN">
+            <input value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="&bull;&bull;&bull;&bull;" inputMode="numeric" type="password" style={inputStyle} />
+          </Campo>
+
+          {error && (
+            <div style={{ background: '#e74c3c22', border: '1px solid #e74c3c66', borderRadius: 8, padding: '10px 12px', color: '#e74c3c', fontSize: 13, marginBottom: 14, marginTop: 4 }}>
+              {error}
             </div>
-          ))}
-        </div>
-      </div>
+          )}
 
-      {/* Planes */}
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 2, color: '#81c784', textTransform: 'uppercase', marginBottom: 12 }}>
-          Elige tu plan
+          <button onClick={registrar} disabled={guardando} style={{
+            width: '100%', background: guardando ? '#4a7a50' : '#2ECC71', color: '#0a1a0f', border: 'none',
+            borderRadius: 12, padding: '16px', cursor: guardando ? 'not-allowed' : 'pointer',
+            fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: 'bold', marginTop: 6,
+            boxShadow: '0 10px 30px rgba(46,204,113,.25)',
+          }}>
+            {guardando ? 'Creando tu cuenta...' : 'Iniciar mis 15 dias gratis'}
+          </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {PLANES.map(p => {
-            const sel = planSel === p.id
-            return (
-              <div key={p.id} onClick={() => setPlanSel(p.id)} style={{
-                position: 'relative',
-                background: sel ? '#2ECC7118' : '#12241a',
-                border: `2px solid ${sel ? '#2ECC71' : '#2ECC7133'}`,
-                borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 14,
-              }}>
-                {/* radio */}
-                <div style={{
-                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                  border: `2px solid ${sel ? '#2ECC71' : '#4a7a50'}`,
-                  background: sel ? '#2ECC71' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#0a1a0f', fontSize: 13, fontWeight: 'bold',
-                }}>{sel ? '✓' : ''}</div>
-                {/* texto */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 'bold' }}>{p.label}</div>
-                  {p.nota ? <div style={{ fontSize: 11, color: '#81c784' }}>{p.nota}</div> : null}
-                  <div style={{ fontSize: 14, color: '#e8f5e9', marginTop: 2 }}>{p.precio}</div>
-                </div>
-                {/* etiqueta destacado */}
-                {p.destacado && p.etiqueta && (
-                  <div style={{
-                    position: 'absolute', top: -10, right: 14,
-                    background: '#F39C12', color: '#0a1a0f', fontSize: 10, fontWeight: 'bold',
-                    padding: '3px 10px', borderRadius: 20, letterSpacing: 1,
-                  }}>{p.etiqueta}</div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
 
-      {/* Botón Inicia Free Trial */}
-      <div style={{ padding: '24px 20px 0' }}>
-        <button onClick={iniciarTrial} style={{
-          width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none',
-          borderRadius: 14, padding: '18px', cursor: 'pointer', fontFamily: 'Georgia, serif',
-          fontSize: 18, fontWeight: 'bold', boxShadow: '0 10px 30px rgba(46,204,113,.3)',
-        }}>
-          Inicia Free Trial
-        </button>
-        <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: '#81c784' }}>
-          ✓ Sin tarjeta de crédito ni débito · Cancela cuando quieras
+        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 11, color: '#81c784', lineHeight: 1.6 }}>
+          Para entrar despues usaras tu PIN<br />y los ultimos 4 digitos de tu telefono.
         </div>
-      </div>
 
+      </div>
+    </div>
+  )
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', background: '#0d2410', border: '1px solid #2ECC7144', borderRadius: 8,
+  padding: '12px 14px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 15,
+  boxSizing: 'border-box',
+}
+
+function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>{label}</div>
+      {children}
     </div>
   )
 }
