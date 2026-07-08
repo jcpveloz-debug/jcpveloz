@@ -386,7 +386,7 @@ export default function NuevoJuegoPage() {
                   border: `2px solid ${formato === 'stroke_play' ? '#2ECC71' : '#2ECC7133'}`,
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
-                  <div style={{ fontSize: 11, color: '#81c784' }}>Golpes / Grupos</div>
+                  <div style={{ fontSize: 11, color: '#81c784' }}>Individual o Grupos</div>
                 </div>
                 <div onClick={() => setFormato('stableford')} style={{
                   flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
@@ -398,13 +398,13 @@ export default function NuevoJuegoPage() {
                 </div>
               </div>
 
-<div style={{ margin: '14px 0 0', paddingTop: 14, borderTop: '1px solid #2ECC7122' }}>
-                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>O TORNEO DE PAREJAS</div>
-                <button onClick={() => window.location.href = '/juego/bola-baja' + adminSuffix} style={{
+              <div style={{ margin: '14px 0 0', paddingTop: 14, borderTop: '1px solid #2ECC7122' }}>
+                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>O TORNEO DE VARIAS PAREJAS</div>
+                <button onClick={() => window.location.href = '/juego/match-multiple' + adminSuffix} style={{
                   width: '100%', background: 'transparent', color: '#F39C12', border: '1px solid #F39C12',
                   borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
                 }}>
-                  Bola Baja en Parejas
+                  Match Play Multiple
                 </button>
               </div>
             </div>
@@ -527,18 +527,21 @@ export default function NuevoJuegoPage() {
 
             {(formato === 'stroke_play' || formato === 'stableford') && (
               <>
-                {/* Selector Jugadores / Grupos */}
-                <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                {/* Selector Individual / Grupos */}
+                <div style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
                   <button onClick={() => setModoStroke('jugadores')} style={{
                     flex: 1, padding: '12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontFamily: 'Georgia, serif', fontWeight: 'bold',
                     background: modoStroke === 'jugadores' ? '#2ECC71' : 'transparent',
                     color: modoStroke === 'jugadores' ? '#0a1a0f' : '#2ECC71', border: '1px solid #2ECC71',
-                  }}>Jugadores</button>
+                  }}>Individual</button>
                   <button onClick={() => setModoStroke('grupos')} style={{
                     flex: 1, padding: '12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontFamily: 'Georgia, serif', fontWeight: 'bold',
                     background: modoStroke === 'grupos' ? '#2ECC71' : 'transparent',
                     color: modoStroke === 'grupos' ? '#0a1a0f' : '#2ECC71', border: '1px solid #2ECC71',
                   }}>Grupos</button>
+                </div>
+                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 16, textAlign: 'center' }}>
+                  Grupos: Twosomes, Threesomes, Foursomes, etc.
                 </div>
 
                 {/* MODO JUGADORES: buscar individuales */}
