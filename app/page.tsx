@@ -14,7 +14,7 @@ export default function Home() {
     }}>
       <div style={{ maxWidth: 440, margin: '0 auto', padding: '0 20px 50px' }}>
 
-{/* Encabezado tipo marca */}
+        {/* Encabezado tipo marca */}
         <div style={{ textAlign: 'center', padding: '30px 0 20px' }}>
           <img src="/logo-kriter.png" alt="Kriter Golf Club" style={{
             width: 100, height: 100, objectFit: 'contain', marginBottom: 8,
@@ -26,13 +26,14 @@ export default function Home() {
             border: '1px solid #2ECC71', borderRadius: 20, padding: '4px 14px', letterSpacing: .5,
           }}>Prueba GRATIS 15 días</span>
         </div>
-{/* Enlace para quien ya tiene cuenta */}
+
+        {/* Enlace para quien ya tiene cuenta */}
         <div style={{ textAlign: 'center', padding: '4px 0 0' }}>
           <a href="/entrar" style={{ fontSize: 16, color: '#F39C12', textDecoration: 'underline', fontWeight: 'bold' }}>
             ¿Ya tienes cuenta? Entra aquí
           </a>
         </div>
-        
+
         {/* Hero */}
         <section style={{ textAlign: 'center', padding: '24px 0 8px' }}>
           <div style={{ fontSize: 10, letterSpacing: 4, color: '#81c784', textTransform: 'uppercase', marginBottom: 18 }}>
@@ -101,13 +102,13 @@ export default function Home() {
             fontSize: 19, fontWeight: 'bold', letterSpacing: .4, textDecoration: 'none',
             boxShadow: '0 10px 30px rgba(46,204,113,.32)',
           }}>Inicia Free Trial</a>
-          <div style={{ marginTop: 13, fontSize: 12.5, color: '#81c784' }}>✓ Sin tarjeta de crédito ni débito</div>
+          <div style={{ marginTop: 13, fontSize: 12.5, color: '#81c784' }}>✓ 15 días gratis · Sin tarjeta de crédito ni débito</div>
         </div>
 
         {/* Features */}
         <section style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 1, border: '1px solid #2ECC7133', borderRadius: 16, overflow: 'hidden' }}>
           {[
-            { ic: '⛳', ft: 'Varios formatos', fd: 'Stroke Play, Stableford, Match Play, Bola Baja en Parejas y Torneos de Grupos.' },
+            { ic: '⛳', ft: 'Torneos de Grupos', fd: 'Twosomes, Threesomes, Foursomes y más. Tambien Stroke Play, Stableford, Match Play y Bola Baja en Parejas.' },
             { ic: '🧮', ft: 'Cálculos automáticos', fd: 'Tu HCP, tu neto y tus ventajas por hoyo, sin sacar la calculadora.' },
             { ic: '📊', ft: 'Estadísticas de tu juego', fd: 'Ve cómo vienes ronda con ronda y dónde ganas o pierdes golpes.' },
             { ic: '🏆', ft: 'Ranking en vivo', fd: 'El marcador de tu grupo se actualiza solo mientras juegan.' },
@@ -144,11 +145,7 @@ export default function Home() {
             fontSize: 19, fontWeight: 'bold', letterSpacing: .4, textDecoration: 'none',
             boxShadow: '0 10px 30px rgba(46,204,113,.32)',
           }}>Inicia Free Trial</a>
-          <div style={{ marginTop: 13, fontSize: 12.5, color: '#81c784' }}>Solo tu nombre, teléfono y HCP</div>
-        </div>
-
-        <div style={{ marginTop: 40, textAlign: 'center', fontSize: 10, color: '#4a6450', letterSpacing: .5, lineHeight: 1.7 }}>
-          © 2026 Julio C. Perales — Kriter Golf Club
+          <div style={{ marginTop: 13, fontSize: 12.5, color: '#81c784' }}>✓ 15 días gratis · Solo tu nombre, teléfono y HCP</div>
         </div>
 
       </div>
