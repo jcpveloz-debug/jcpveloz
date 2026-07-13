@@ -59,6 +59,9 @@ export default function TarjetaStrokePage() {
   const [tramo, setTramo] = useState<'front' | 'back'>('front')
   const [panel, setPanel] = useState<{ jugadorId: string; hole: number } | null>(null)
   const [nombreCampo, setNombreCampo] = useState('')
+  const [slopeCampo, setSlopeCampo] = useState<number | null>(null)
+  const [ratingCampo, setRatingCampo] = useState<number | null>(null)
+  const [panelGhin, setPanelGhin] = useState(false)
 
   useEffect(() => {
     const id = leerGameId()
@@ -76,13 +79,15 @@ export default function TarjetaStrokePage() {
         .single()
       const cursoDelJuego = rondaData?.course_id || COURSE_ID
 
-      // nombre del campo (para el texto de compartir)
+      // nombre, slope y rating del campo (para compartir y GHIN)
       const { data: cData } = await supabase
         .from('golf_courses')
-        .select('name')
+        .select('name, slope, rating')
         .eq('id', cursoDelJuego)
         .single()
       setNombreCampo(cData?.name || '')
+      setSlopeCampo(cData?.slope ?? null)
+      setRatingCampo(cData?.rating ?? null)
 
       const { data: hData } = await supabase
         .from('course_holes')
@@ -414,11 +419,76 @@ export default function TarjetaStrokePage() {
           <span style={{ fontSize: 18 }}>&#128241;</span> Compartir Resultados
         </button>
 
+        {/* Boton DATOS PARA GHIN */}
+        <button onClick={() => setPanelGhin(true)} style={{
+          width: '100%', background: 'transparent', color: '#2ECC71', border: '1px solid #2ECC71', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold', marginBottom: 12,
+        }}>
+          Datos para GHIN (registro de HCP)
+        </button>
+
         {/* Boton ranking */}
         <button onClick={() => window.location.href = `/juego/resumen-stroke?game=${gameId}${adminSuffix}`} style={{
           width: '100%', background: '#F39C12', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
         }}>Ver Ranking de Ganadores</button>
       </div>
+
+      {/* Panel DATOS PARA GHIN */}
+      {panelGhin && (
+        <div onClick={() => setPanelGhin(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 320,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#12241a', border: '1px solid #2ECC71', borderRadius: 16,
+            padding: 20, width: '100%', maxWidth: 460, maxHeight: '85vh', overflowY: 'auto',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 16, fontWeight: 'bold', color: '#2ECC71' }}>Datos para GHIN</div>
+              <div style={{ fontSize: 11, color: '#81c784', marginTop: 3 }}>Usa estos datos para registrar tu score en la app de GHIN</div>
+            </div>
+
+            {/* Datos del campo */}
+            <div style={{ background: '#0d2410', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
+              <div style={{ marginBottom: 4 }}><span style={{ color: '#81c784' }}>Campo:</span> <b>{nombreCampo}</b></div>
+              <div style={{ marginBottom: 4 }}><span style={{ color: '#81c784' }}>Rating:</span> <b>{ratingCampo !== null ? ratingCampo : '-'}</b> &nbsp; <span style={{ color: '#81c784' }}>Slope:</span> <b>{slopeCampo !== null ? slopeCampo : '-'}</b></div>
+              <div><span style={{ color: '#81c784' }}>Fecha:</span> <b>{new Date().toLocaleDateString('es-MX')}</b></div>
+            </div>
+
+            {/* Score de cada jugador */}
+            {jugadores.map(j => {
+              const gf = grossTramo(j.id, front)
+              const gb = grossTramo(j.id, back)
+              const gt = gf + gb
+              return (
+                <div key={j.id} style={{ background: '#1a2e1d', borderRadius: 10, padding: '12px 14px', marginBottom: 10, border: '1px solid #2ECC7133' }}>
+                  <div style={{ fontSize: 14, fontWeight: 'bold', color: '#e8f5e9', marginBottom: 6 }}>{j.nombre}</div>
+                  <div style={{ fontSize: 12, color: '#81c784', marginBottom: 6 }}>
+                    Front 9: <b style={{ color: '#e8f5e9' }}>{gf}</b> &nbsp; Back 9: <b style={{ color: '#e8f5e9' }}>{gb}</b> &nbsp; Total: <b style={{ color: '#2ECC71' }}>{gt}</b>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#e8f5e9', lineHeight: 1.7 }}>
+                    {hoyos.map(h => {
+                      const g = getScore(j.id, h.hole_number)
+                      return (
+                        <span key={h.hole_number} style={{ display: 'inline-block', minWidth: 34, marginRight: 2 }}>
+                          <span style={{ color: '#4a7a50' }}>H{h.hole_number}:</span> {g !== '' ? g : '-'}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+
+            <div style={{ fontSize: 10, color: '#81c784', lineHeight: 1.5, marginTop: 10, marginBottom: 14 }}>
+              Nota: GHIN registra scores individuales. Abre tu app de GHIN, selecciona el campo y tee que jugaste, la fecha, y captura tu score hoyo por hoyo o el total.
+            </div>
+
+            <button onClick={() => setPanelGhin(false)} style={{
+              width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
+            }}>Cerrar</button>
+          </div>
+        </div>
+      )}
 
       {/* Mini-panel de captura */}
       {panel && (
