@@ -8,7 +8,7 @@ interface Jugador {
   id: string
   nombre: string
   hcp: number
-  pareja: number   // team_number
+  pareja: number
 }
 interface Hoyo { hole_number: number; par: number; si: number }
 
@@ -41,6 +41,7 @@ export default function BolaBajaTarjetaPage() {
   const [guardando, setGuardando] = useState(false)
   const [tramo, setTramo] = useState<'front' | 'back'>('front')
   const [panel, setPanel] = useState<{ jugadorId: string; hole: number } | null>(null)
+  const [nombreCampo, setNombreCampo] = useState('')
 
   useEffect(() => {
     const id = leerGameId()
@@ -58,6 +59,16 @@ export default function BolaBajaTarjetaPage() {
         .single()
       const cursoDelJuego = rondaData?.course_id
       setClubId(rondaData?.club_id || '')
+
+      // nombre del campo (para el texto de compartir)
+      if (cursoDelJuego) {
+        const { data: cData } = await supabase
+          .from('golf_courses')
+          .select('name')
+          .eq('id', cursoDelJuego)
+          .single()
+        setNombreCampo(cData?.name || '')
+      }
 
       const { data: hData } = await supabase
         .from('course_holes')
@@ -84,7 +95,6 @@ export default function BolaBajaTarjetaPage() {
           const hcp = g.hcp_index !== null && g.hcp_index !== undefined ? g.hcp_index : (p?.hcp_base ?? 0)
           return { id: g.player_id, nombre: p?.golf_name || 'Jugador', hcp, pareja: Number(g.team_number) || 0 }
         })
-        // ordenar por pareja
         jugs.sort((a, b) => a.pareja - b.pareja)
       }
       setJugadores(jugs)
@@ -131,7 +141,6 @@ export default function BolaBajaTarjetaPage() {
     return scores[jid]?.[hole] ?? ''
   }
 
-  // neto (golpes netos) de un jugador en un hoyo: gross - ventaja. NULL si no hay gross.
   function netoGolpes(j: Jugador, h: Hoyo): number | null {
     const g = getScore(j.id, h.hole_number)
     if (g === '') return null
@@ -139,16 +148,12 @@ export default function BolaBajaTarjetaPage() {
     return Number(g) - v
   }
 
-  // Lista de numeros de pareja unicos, ordenados
   const numerosPareja = Array.from(new Set(jugadores.map(j => j.pareja))).sort((a, b) => a - b)
 
-  // Los 2 jugadores de una pareja
   function jugadoresDePareja(num: number): Jugador[] {
     return jugadores.filter(j => j.pareja === num)
   }
 
-  // Bola baja de una pareja en un hoyo: el neto MENOR de sus 2 jugadores.
-  // Devuelve null si ninguno de los 2 tiene gross capturado.
   function bolaBajaHoyo(num: number, h: Hoyo): number | null {
     const js = jugadoresDePareja(num)
     const netos = js.map(j => netoGolpes(j, h)).filter(n => n !== null) as number[]
@@ -156,7 +161,6 @@ export default function BolaBajaTarjetaPage() {
     return Math.min(...netos)
   }
 
-  // Total de bola baja de una pareja en un tramo (suma de los menores netos por hoyo)
   function totalParejaTramo(num: number, tr: Hoyo[]): number {
     let s = 0
     tr.forEach(h => { const b = bolaBajaHoyo(num, h); if (b !== null) s += b })
@@ -210,6 +214,35 @@ export default function BolaBajaTarjetaPage() {
   function abrirPanel(jid: string, hole: number) {
     if (!esAdmin) return
     setPanel({ jugadorId: jid, hole })
+  }
+
+  // ---- COMPARTIR RESULTADOS ----
+  async function compartirResultados() {
+    // parejas ordenadas por total neto (menor gana)
+    const filas = numerosPareja.map(num => {
+      const total = totalParejaTramo(num, front) + totalParejaTramo(num, back)
+      const nombres = jugadoresDePareja(num).map(j => j.nombre.split(' ')[0]).join(' / ')
+      return { num, total, nombres }
+    }).sort((a, b) => a.total - b.total)
+
+    let texto = 'Resultados Bola Baja en Parejas'
+    if (nombreCampo) texto += ' - ' + nombreCampo
+    texto += '\n\n'
+    filas.forEach((f, i) => {
+      texto += (i + 1) + '. Pareja ' + romano(f.num) + ' (' + f.nombres + ') - Neto ' + f.total + '\n'
+    })
+    texto += '\nJuega tu tambien en Kriter Golf Club:\nhttps://kriter-golf-club.vercel.app'
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Kriter Golf Club', text: texto })
+      } catch (err) {
+        // usuario cancelo
+      }
+    } else {
+      const url = 'https://wa.me/?text=' + encodeURIComponent(texto)
+      window.open(url, '_blank')
+    }
   }
 
   return (
@@ -283,7 +316,6 @@ export default function BolaBajaTarjetaPage() {
                         const g = getScore(j.id, h.hole_number)
                         const v = ventajaEnHoyo(j.hcp, h.si)
                         const nGolpes = netoGolpes(j, h)
-                        // marcar si este jugador es la bola baja de la pareja en este hoyo
                         const bb = bolaBajaHoyo(j.pareja, h)
                         const esBolaBaja = nGolpes !== null && bb !== null && nGolpes === bb
                         return (
@@ -369,6 +401,14 @@ export default function BolaBajaTarjetaPage() {
             <div>El numero bajo el gross es el neto (gross - ventaja). La bola baja es el menor neto de la pareja. Fondo verde = ese jugador aporto la bola baja.</div>
           </div>
         </div>
+
+        {/* Boton COMPARTIR */}
+        <button onClick={compartirResultados} style={{
+          width: '100%', background: '#25D366', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold', marginBottom: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 18 }}>&#128241;</span> Compartir Resultados
+        </button>
 
         {/* Boton ranking */}
         <button onClick={() => window.location.href = `/juego/bola-baja-ranking?game=${gameId}${adminSuffix}`} style={{
