@@ -21,7 +21,6 @@ function ventajaEnHoyo(hcp: number, si: number) {
   return vueltas + (si <= residuo ? 1 : 0)
 }
 
-// formatea el neto vs par: negativo tal cual, 0 = "E", positivo con "+"
 function fmtNeto(n: number): string {
   if (n === 0) return 'E'
   if (n > 0) return '+' + n
@@ -29,14 +28,12 @@ function fmtNeto(n: number): string {
 }
 
 function colorNeto(n: number): string {
-  if (n < 0) return '#2ECC71'   // bajo par = verde
-  if (n === 0) return '#F39C12' // par = naranja (destacado)
-  return '#e8f5e9'              // sobre par = blanco
+  if (n < 0) return '#2ECC71'
+  if (n === 0) return '#F39C12'
+  return '#e8f5e9'
 }
-// decide la marca visual sobre el BRUTO (gross vs par)
-// círculos = bajo par, recuadros = sobre par, hole-in-one (gross 1) = 3 círculos
 function marcaBruto(gross: number, par: number): { forma: 'circulo' | 'recuadro' | null; cantidad: number } {
-  if (gross === 1) return { forma: 'circulo', cantidad: 3 } // hole in one
+  if (gross === 1) return { forma: 'circulo', cantidad: 3 }
   const dif = gross - par
   if (dif <= -3) return { forma: 'circulo', cantidad: 3 }
   if (dif === -2) return { forma: 'circulo', cantidad: 2 }
@@ -44,7 +41,7 @@ function marcaBruto(gross: number, par: number): { forma: 'circulo' | 'recuadro'
   if (dif === 1) return { forma: 'recuadro', cantidad: 1 }
   if (dif === 2) return { forma: 'recuadro', cantidad: 2 }
   if (dif >= 3) return { forma: 'recuadro', cantidad: 3 }
-  return { forma: null, cantidad: 0 } // par = sin marca
+  return { forma: null, cantidad: 0 }
 }
 function leerGameId(): string | null {
   if (typeof window === 'undefined') return null
@@ -61,6 +58,7 @@ export default function TarjetaStrokePage() {
   const [guardando, setGuardando] = useState(false)
   const [tramo, setTramo] = useState<'front' | 'back'>('front')
   const [panel, setPanel] = useState<{ jugadorId: string; hole: number } | null>(null)
+  const [nombreCampo, setNombreCampo] = useState('')
 
   useEffect(() => {
     const id = leerGameId()
@@ -71,13 +69,20 @@ export default function TarjetaStrokePage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
-// Leer el campo (course_id) del juego, no usar el fijo
       const { data: rondaData } = await supabase
         .from('game_rounds')
         .select('course_id')
         .eq('id', id)
         .single()
       const cursoDelJuego = rondaData?.course_id || COURSE_ID
+
+      // nombre del campo (para el texto de compartir)
+      const { data: cData } = await supabase
+        .from('golf_courses')
+        .select('name')
+        .eq('id', cursoDelJuego)
+        .single()
+      setNombreCampo(cData?.name || '')
 
       const { data: hData } = await supabase
         .from('course_holes')
@@ -95,7 +100,7 @@ export default function TarjetaStrokePage() {
       let jugs: Jugador[] = []
       if (grp && grp.length > 0) {
         const ids = grp.map(g => g.player_id)
-const { data: pData } = await supabase
+        const { data: pData } = await supabase
           .from('players')
           .select('id, golf_name, hcp_base, integrantes')
           .in('id', ids)
@@ -114,7 +119,6 @@ const { data: pData } = await supabase
         .from('hole_scores')
         .select('player_id, hole_number, gross_score')
         .eq('game_round_id', id)
-      // OJO: usamos '' como vacío. Un gross de 0 se guarda como '0', nunca se confunde con vacío.
       sData?.forEach(s => {
         if (init[s.player_id] && s.gross_score !== null && s.gross_score !== undefined) {
           init[s.player_id][s.hole_number] = String(s.gross_score)
@@ -137,8 +141,8 @@ const { data: pData } = await supabase
 
   if (!gameId || jugadores.length < 1) return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#e8f5e9', fontFamily: 'Georgia, serif', padding: 24, textAlign: 'center' }}>
-      <div style={{ fontSize: 16, marginBottom: 16 }}>No se encontró el juego.</div>
-      <button onClick={() => window.location.href = '/dashboard'} style={{ background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px 20px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontWeight: 'bold' }}>← Dashboard</button>
+      <div style={{ fontSize: 16, marginBottom: 16 }}>No se encontro el juego.</div>
+      <button onClick={() => window.location.href = '/dashboard'} style={{ background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px 20px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontWeight: 'bold' }}>Dashboard</button>
     </div>
   )
 
@@ -150,7 +154,6 @@ const { data: pData } = await supabase
     return scores[jid]?.[hole] ?? ''
   }
 
-  // neto vs par de un hoyo (solo si hay gross capturado)
   function netoHoyo(j: Jugador, h: Hoyo): number | null {
     const g = getScore(j.id, h.hole_number)
     if (g === '') return null
@@ -201,15 +204,12 @@ const { data: pData } = await supabase
       setGuardando(false)
     }
   }
-    
 
-  // gross de un tramo
   function grossTramo(jid: string, tr: Hoyo[]): number {
     let s = 0
     tr.forEach(h => { const g = getScore(jid, h.hole_number); if (g !== '') s += Number(g) })
     return s
   }
-  // neto vs par de un tramo (suma de netos de hoyo)
   function netoTramo(j: Jugador, tr: Hoyo[]): number {
     let s = 0
     tr.forEach(h => { const n = netoHoyo(j, h); if (n !== null) s += n })
@@ -221,15 +221,46 @@ const { data: pData } = await supabase
     setPanel({ jugadorId: jid, hole })
   }
 
+  // ---- COMPARTIR RESULTADOS ----
+  async function compartirResultados() {
+    // arma el texto con los resultados ordenados por neto total (mejor primero)
+    const filas = jugadores.map(j => {
+      const gross = grossTramo(j.id, hoyos)
+      const nt = netoTramo(j, front) + netoTramo(j, back)
+      return { nombre: j.nombre.split(' ')[0], gross, nt }
+    }).sort((a, b) => a.nt - b.nt)
+
+    let texto = 'Resultados de la ronda'
+    if (nombreCampo) texto += ' en ' + nombreCampo
+    texto += '\n\n'
+    filas.forEach((f, i) => {
+      texto += (i + 1) + '. ' + f.nombre + ' - Neto ' + fmtNeto(f.nt) + ' (Gross ' + f.gross + ')\n'
+    })
+    texto += '\nJuega tu tambien en Kriter Golf Club:\nhttps://kriter-golf-club.vercel.app'
+
+    // Web Share API (abre el menu del cel: WhatsApp, etc.)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Kriter Golf Club', text: texto })
+      } catch (err) {
+        // si el usuario cancela, no hacemos nada
+      }
+    } else {
+      // Respaldo: abrir WhatsApp directo con el texto
+      const url = 'https://wa.me/?text=' + encodeURIComponent(texto)
+      window.open(url, '_blank')
+    }
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', fontFamily: 'Georgia, serif', color: '#e8f5e9' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #1a3a1f 0%, #0d2410 100%)', borderBottom: '2px solid #2ECC71', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 11, letterSpacing: 4, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 4 }}>Kriter Golf Club</div>
-          <div style={{ fontSize: 18, fontWeight: 'bold' }}>📋 Tarjeta Stroke Play</div>
+          <div style={{ fontSize: 18, fontWeight: 'bold' }}>Tarjeta Stroke Play</div>
         </div>
-        <button onClick={() => window.location.href = '/dashboard' + (esAdmin ? '?admin=1' : '')} style={{ background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71', padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif' }}>← Dashboard</button>
+        <button onClick={() => window.location.href = '/dashboard' + (esAdmin ? '?admin=1' : '')} style={{ background: 'transparent', border: '1px solid #2ECC71', borderRadius: 8, color: '#2ECC71', padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif' }}>Dashboard</button>
       </div>
 
       {/* Etiqueta de modo */}
@@ -238,7 +269,7 @@ const { data: pData } = await supabase
         color: esAdmin ? '#2ECC71' : '#F39C12',
         textAlign: 'center', padding: '6px', fontSize: 12, letterSpacing: 1,
       }}>
-        {esAdmin ? '✏️ Modo Edición — toca una celda para capturar' : '👁️ Modo Solo Lectura'}
+        {esAdmin ? 'Modo Edicion - toca una celda para capturar' : 'Modo Solo Lectura'}
       </div>
 
       <div style={{ padding: '16px 16px 80px' }}>
@@ -254,7 +285,7 @@ const { data: pData } = await supabase
           }}>BACK (10-18)</button>
         </div>
 
-        {/* Cuadrícula */}
+        {/* Cuadricula */}
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '12px', border: '1px solid #2ECC7133', marginBottom: 16, overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 13, minWidth: 'max-content' }}>
             <thead>
@@ -281,7 +312,7 @@ const { data: pData } = await supabase
                 const netoTr = netoTramo(j, tramoActual)
                 return (
                   <tr key={j.id} style={{ background: idx % 2 === 0 ? '#162a1a' : 'transparent' }}>
-<td style={{ position: 'sticky', left: 0, background: idx % 2 === 0 ? '#162a1a' : '#0a1a0f', padding: '6px 10px', textAlign: 'left', whiteSpace: 'nowrap', zIndex: 2 }}>
+                    <td style={{ position: 'sticky', left: 0, background: idx % 2 === 0 ? '#162a1a' : '#0a1a0f', padding: '6px 10px', textAlign: 'left', whiteSpace: 'nowrap', zIndex: 2 }}>
                       <div style={{ fontWeight: 'bold' }}>{j.integrantes ? j.nombre : j.nombre.split(' ')[0]}</div>
                       {j.integrantes && (
                         <div style={{ fontSize: 9, color: '#81c784', fontWeight: 'normal', marginTop: 2 }}>{j.integrantes}</div>
@@ -291,7 +322,7 @@ const { data: pData } = await supabase
                       const g = getScore(j.id, h.hole_number)
                       const v = ventajaEnHoyo(j.hcp, h.si)
                       const n = netoHoyo(j, h)
-const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad: 0 }
+                      const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad: 0 }
                       return (
                         <td key={h.hole_number} style={{ padding: '4px 0', textAlign: 'center', borderLeft: '1px solid #2ECC7122' }}>
                           <div onClick={() => abrirPanel(j.id, h.hole_number)} style={{
@@ -310,7 +341,7 @@ const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad:
                                 }} />
                               ))}
                               <span style={{ fontSize: 16, fontWeight: 'bold', color: g !== '' ? '#e8f5e9' : '#4a7a50', lineHeight: '16px', position: 'relative', zIndex: 1 }}>
-                                {g !== '' ? g : '–'}
+                                {g !== '' ? g : '-'}
                               </span>
                             </div>
                             {n !== null && (
@@ -331,7 +362,7 @@ const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad:
           </table>
         </div>
 
-        {/* Tabla de resultados: Net FRONT, Net BACK, Net TOTAL */}
+        {/* Tabla de resultados */}
         <div style={{ background: '#1a2e1d', borderRadius: 14, padding: '14px', border: '1px solid #2ECC7122', marginBottom: 16 }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: '#2ECC71', textTransform: 'uppercase', marginBottom: 10 }}>Resultados (neto vs par)</div>
           <div style={{ overflowX: 'auto' }}>
@@ -371,14 +402,22 @@ const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad:
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F39C12', display: 'inline-block' }} />
               Punto naranja: hoyo donde el jugador recibe ventaja
             </div>
-            <div>Neto = gross − ventaja − par. &nbsp; E = par (even), verde = bajo par.</div>
+            <div>Neto = gross - ventaja - par.  E = par (even), verde = bajo par.</div>
           </div>
         </div>
 
-        {/* Botón ranking */}
+        {/* Boton COMPARTIR */}
+        <button onClick={compartirResultados} style={{
+          width: '100%', background: '#25D366', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold', marginBottom: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 18 }}>&#128241;</span> Compartir Resultados
+        </button>
+
+        {/* Boton ranking */}
         <button onClick={() => window.location.href = `/juego/resumen-stroke?game=${gameId}${adminSuffix}`} style={{
           width: '100%', background: '#F39C12', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
-        }}>🏆 Ver Ranking de Ganadores</button>
+        }}>Ver Ranking de Ganadores</button>
       </div>
 
       {/* Mini-panel de captura */}
@@ -393,10 +432,10 @@ const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad:
           }}>
             <div style={{ textAlign: 'center', marginBottom: 14 }}>
               <div style={{ fontSize: 15, fontWeight: 'bold', color: '#2ECC71' }}>
-                {jugadores.find(j => j.id === panel.jugadorId)?.nombre} — Hoyo {panel.hole}
+                {jugadores.find(j => j.id === panel.jugadorId)?.nombre} - Hoyo {panel.hole}
               </div>
               <div style={{ fontSize: 11, color: '#81c784', marginTop: 2 }}>
-                Par {hoyos.find(h => h.hole_number === panel.hole)?.par} · Toca los golpes
+                Par {hoyos.find(h => h.hole_number === panel.hole)?.par} - Toca los golpes
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
@@ -407,11 +446,11 @@ const marca = g !== '' ? marcaBruto(Number(g), h.par) : { forma: null, cantidad:
                 }}>{n}</button>
               ))}
             </div>
-<div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <button onClick={() => borrarGolpe(panel.jugadorId, panel.hole)} style={{
                 flex: 1, background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c',
                 borderRadius: 8, padding: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
-              }}>🗑️ Borrar</button>
+              }}>Borrar</button>
               <button onClick={() => setPanel(null)} style={{
                 flex: 1, background: 'transparent', color: '#81c784', border: '1px solid #2ECC7144',
                 borderRadius: 8, padding: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13,
