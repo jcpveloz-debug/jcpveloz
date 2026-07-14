@@ -9,6 +9,7 @@ export default function RegistroPage() {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [hcp, setHcp] = useState('')
+  const [ghin, setGhin] = useState('')
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -57,6 +58,7 @@ export default function RegistroPage() {
         phone: telLimpio,
         pin: pin,
         hcp_base: hcpNum,
+        ghin_number: ghin.trim() || null,
         active: true,
       })
       if (e1) throw e1
@@ -98,7 +100,7 @@ export default function RegistroPage() {
           </div>
           <div style={{ fontSize: 26, fontWeight: 'bold' }}>Crea tu cuenta</div>
           <div style={{ fontSize: 13, color: '#81c784', marginTop: 8 }}>
-            30 dias gratis &middot; Sin tarjeta de credito ni debito
+            15 dias gratis &middot; Sin tarjeta de credito ni debito
           </div>
         </div>
 
@@ -118,6 +120,11 @@ export default function RegistroPage() {
           <Campo label="HCP (ej. 12.5)">
             <input value={hcp} onChange={e => setHcp(e.target.value)} placeholder="0"
               type="number" step="0.1" inputMode="decimal" style={inputStyle} />
+          </Campo>
+
+          <Campo label="GHIN NUMBER (opcional, solo federados)">
+            <input value={ghin} onChange={e => setGhin(e.target.value)} placeholder="Tu numero GHIN"
+              inputMode="numeric" style={inputStyle} />
           </Campo>
 
           <Campo label="PIN (4 digitos)">
@@ -142,7 +149,7 @@ export default function RegistroPage() {
             fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: 'bold', marginTop: 6,
             boxShadow: '0 10px 30px rgba(46,204,113,.25)',
           }}>
-            {guardando ? 'Creando tu cuenta...' : 'Iniciar mis 30 dias gratis'}
+            {guardando ? 'Creando tu cuenta...' : 'Iniciar mis 15 dias gratis'}
           </button>
         </div>
 
