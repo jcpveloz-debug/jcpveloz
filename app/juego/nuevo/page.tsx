@@ -82,7 +82,6 @@ export default function NuevoJuegoPage() {
         const { data: pData } = await supabase
           .from('players')
           .select('id, golf_name, hcp_base, integrantes')
-          .eq('club_id', porDefecto.club_id)
           .eq('active', true)
           .order('golf_name')
         setJugadores(pData || [])
@@ -110,7 +109,6 @@ export default function NuevoJuegoPage() {
     const { data: pData } = await supabase
       .from('players')
       .select('id, golf_name, hcp_base, integrantes')
-      .eq('club_id', campo.club_id)
       .eq('active', true)
       .order('golf_name')
     setJugadores(pData || [])

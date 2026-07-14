@@ -12,6 +12,7 @@ interface Jugador {
   nombre: string
   hcp: number
   integrantes?: string
+  ghin?: string
 }
 interface Hoyo { hole_number: number; par: number; si: number }
 
@@ -62,12 +63,23 @@ export default function TarjetaStrokePage() {
   const [slopeCampo, setSlopeCampo] = useState<number | null>(null)
   const [ratingCampo, setRatingCampo] = useState<number | null>(null)
   const [panelGhin, setPanelGhin] = useState(false)
+  const [jugadorGhinId, setJugadorGhinId] = useState<string | null>(null)
+  const [usuarioLogueado, setUsuarioLogueado] = useState<string>('')
 
   useEffect(() => {
     const id = leerGameId()
     setGameId(id)
     const params = new URLSearchParams(window.location.search)
     if (params.get('admin') === '1') setEsAdmin(true)
+
+    // leer nombre del usuario logueado (para el reporte GHIN individual)
+    try {
+      const raw = localStorage.getItem('kgc_user')
+      if (raw) {
+        const u = JSON.parse(raw)
+        setUsuarioLogueado((u?.nombre || '').trim().toLowerCase())
+      }
+    } catch (_) {}
 
     async function cargar() {
       if (!id) { setLoading(false); return }
@@ -107,12 +119,12 @@ export default function TarjetaStrokePage() {
         const ids = grp.map(g => g.player_id)
         const { data: pData } = await supabase
           .from('players')
-          .select('id, golf_name, hcp_base, integrantes')
+          .select('id, golf_name, hcp_base, integrantes, ghin_number')
           .in('id', ids)
         jugs = grp.map(g => {
           const p = pData?.find(x => x.id === g.player_id)
           const hcp = g.hcp_index !== null && g.hcp_index !== undefined ? g.hcp_index : (p?.hcp_base ?? 0)
-          return { id: g.player_id, nombre: p?.golf_name || 'Jugador', hcp, integrantes: p?.integrantes || '' }
+          return { id: g.player_id, nombre: p?.golf_name || 'Jugador', hcp, integrantes: p?.integrantes || '', ghin: p?.ghin_number || '' }
         })
       }
       setJugadores(jugs)
@@ -252,6 +264,42 @@ export default function TarjetaStrokePage() {
       }
     } else {
       // Respaldo: abrir WhatsApp directo con el texto
+      const url = 'https://wa.me/?text=' + encodeURIComponent(texto)
+      window.open(url, '_blank')
+    }
+  }
+
+  // ---- COMPARTIR DATOS PARA GHIN ----
+  async function compartirGhin() {
+    const match = jugadores.find(j => j.nombre.trim().toLowerCase() === usuarioLogueado)
+    const idActivo = jugadorGhinId || (match ? match.id : (jugadores[0]?.id || null))
+    const jugadorSel = jugadores.find(j => j.id === idActivo)
+    if (!jugadorSel) return
+
+    const gf = grossTramo(jugadorSel.id, front)
+    const gb = grossTramo(jugadorSel.id, back)
+    const gt = gf + gb
+
+    let texto = 'DATOS PARA GHIN\n\n'
+    texto += 'Campo: ' + nombreCampo + '\n'
+    texto += 'Rating: ' + (ratingCampo !== null ? ratingCampo : '-') + '  Slope: ' + (slopeCampo !== null ? slopeCampo : '-') + '\n'
+    texto += 'Fecha: ' + new Date().toLocaleDateString('es-MX') + '\n\n'
+    texto += 'Jugador: ' + jugadorSel.nombre + '\n'
+    texto += 'GHIN #: ' + (jugadorSel.ghin ? jugadorSel.ghin : 'no registrado') + '\n'
+    texto += 'Front 9: ' + gf + '  Back 9: ' + gb + '  Total: ' + gt + '\n\n'
+    texto += 'Hoyo por hoyo:\n'
+    hoyos.forEach(h => {
+      const g = getScore(jugadorSel.id, h.hole_number)
+      texto += 'H' + h.hole_number + ': ' + (g !== '' ? g : '-') + '  '
+    })
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Datos para GHIN', text: texto })
+      } catch (err) {
+        // usuario cancelo
+      }
+    } else {
       const url = 'https://wa.me/?text=' + encodeURIComponent(texto)
       window.open(url, '_blank')
     }
@@ -454,20 +502,27 @@ export default function TarjetaStrokePage() {
               <div><span style={{ color: '#81c784' }}>Fecha:</span> <b>{new Date().toLocaleDateString('es-MX')}</b></div>
             </div>
 
-            {/* Score de cada jugador */}
-            {jugadores.map(j => {
-              const gf = grossTramo(j.id, front)
-              const gb = grossTramo(j.id, back)
+            {/* Datos del jugador logueado (nombre, GHIN y score) */}
+            {(() => {
+              const match = jugadores.find(j => j.nombre.trim().toLowerCase() === usuarioLogueado)
+              const idActivo = jugadorGhinId || (match ? match.id : (jugadores[0]?.id || null))
+              const jugadorSel = jugadores.find(j => j.id === idActivo)
+              if (!jugadorSel) return null
+              const gf = grossTramo(jugadorSel.id, front)
+              const gb = grossTramo(jugadorSel.id, back)
               const gt = gf + gb
               return (
-                <div key={j.id} style={{ background: '#1a2e1d', borderRadius: 10, padding: '12px 14px', marginBottom: 10, border: '1px solid #2ECC7133' }}>
-                  <div style={{ fontSize: 14, fontWeight: 'bold', color: '#e8f5e9', marginBottom: 6 }}>{j.nombre}</div>
+                <div style={{ background: '#1a2e1d', borderRadius: 10, padding: '12px 14px', marginBottom: 10, border: '1px solid #2ECC7133' }}>
+                  <div style={{ fontSize: 15, fontWeight: 'bold', color: '#e8f5e9', marginBottom: 4 }}>{jugadorSel.nombre}</div>
+                  <div style={{ fontSize: 12, color: jugadorSel.ghin ? '#F39C12' : '#4a7a50', marginBottom: 8, fontWeight: 'bold' }}>
+                    GHIN #: {jugadorSel.ghin ? jugadorSel.ghin : 'no registrado'}
+                  </div>
                   <div style={{ fontSize: 12, color: '#81c784', marginBottom: 6 }}>
                     Front 9: <b style={{ color: '#e8f5e9' }}>{gf}</b> &nbsp; Back 9: <b style={{ color: '#e8f5e9' }}>{gb}</b> &nbsp; Total: <b style={{ color: '#2ECC71' }}>{gt}</b>
                   </div>
                   <div style={{ fontSize: 11, color: '#e8f5e9', lineHeight: 1.7 }}>
                     {hoyos.map(h => {
-                      const g = getScore(j.id, h.hole_number)
+                      const g = getScore(jugadorSel.id, h.hole_number)
                       return (
                         <span key={h.hole_number} style={{ display: 'inline-block', minWidth: 34, marginRight: 2 }}>
                           <span style={{ color: '#4a7a50' }}>H{h.hole_number}:</span> {g !== '' ? g : '-'}
@@ -477,15 +532,23 @@ export default function TarjetaStrokePage() {
                   </div>
                 </div>
               )
-            })}
+            })()}
 
             <div style={{ fontSize: 10, color: '#81c784', lineHeight: 1.5, marginTop: 10, marginBottom: 14 }}>
               Nota: GHIN registra scores individuales. Abre tu app de GHIN, selecciona el campo y tee que jugaste, la fecha, y captura tu score hoyo por hoyo o el total.
             </div>
 
-            <button onClick={() => setPanelGhin(false)} style={{
-              width: '100%', background: '#2ECC71', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
-            }}>Cerrar</button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={compartirGhin} style={{
+                flex: 2, background: '#25D366', color: '#0a1a0f', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 14, fontWeight: 'bold',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 18 }}>&#128241;</span> Compartir a GHIN
+              </button>
+              <button onClick={() => setPanelGhin(false)} style={{
+                flex: 1, background: 'transparent', color: '#81c784', border: '1px solid #2ECC7144', borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13,
+              }}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
