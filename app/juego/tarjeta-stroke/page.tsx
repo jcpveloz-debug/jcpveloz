@@ -233,6 +233,21 @@ export default function TarjetaStrokePage() {
     return s
   }
 
+  // ---- SCORE BRUTO AJUSTADO (WHS/FMG): tope por hoyo = Par Neto + 2 ----
+  // Par Neto = par + ventaja del jugador en ese hoyo. Devuelve '' si no hay gross.
+  function grossAjustadoHoyo(j: Jugador, h: Hoyo): string {
+    const g = getScore(j.id, h.hole_number)
+    if (g === '') return ''
+    const parNeto = h.par + ventajaEnHoyo(j.hcp, h.si)
+    const maximo = parNeto + 2
+    return String(Math.min(Number(g), maximo))
+  }
+  function grossAjustadoTramo(j: Jugador, tr: Hoyo[]): number {
+    let s = 0
+    tr.forEach(h => { const a = grossAjustadoHoyo(j, h); if (a !== '') s += Number(a) })
+    return s
+  }
+
   function abrirPanel(jid: string, hole: number) {
     if (!esAdmin) return
     setPanel({ jugadorId: jid, hole })
@@ -276,8 +291,8 @@ export default function TarjetaStrokePage() {
     const jugadorSel = jugadores.find(j => j.id === idActivo)
     if (!jugadorSel) return
 
-    const gf = grossTramo(jugadorSel.id, front)
-    const gb = grossTramo(jugadorSel.id, back)
+    const gf = grossAjustadoTramo(jugadorSel, front)
+    const gb = grossAjustadoTramo(jugadorSel, back)
     const gt = gf + gb
 
     let texto = 'DATOS PARA GHIN\n\n'
@@ -286,11 +301,12 @@ export default function TarjetaStrokePage() {
     texto += 'Fecha: ' + new Date().toLocaleDateString('es-MX') + '\n\n'
     texto += 'Jugador: ' + jugadorSel.nombre + '\n'
     texto += 'GHIN #: ' + (jugadorSel.ghin ? jugadorSel.ghin : 'no registrado') + '\n'
+    texto += 'Score ajustado (WHS)\n'
     texto += 'Front 9: ' + gf + '  Back 9: ' + gb + '  Total: ' + gt + '\n\n'
-    texto += 'Hoyo por hoyo:\n'
+    texto += 'Hoyo por hoyo (ajustado):\n'
     hoyos.forEach(h => {
-      const g = getScore(jugadorSel.id, h.hole_number)
-      texto += 'H' + h.hole_number + ': ' + (g !== '' ? g : '-') + '  '
+      const a = grossAjustadoHoyo(jugadorSel, h)
+      texto += 'H' + h.hole_number + ': ' + (a !== '' ? a : '-') + '  '
     })
 
     if (navigator.share) {
@@ -502,14 +518,14 @@ export default function TarjetaStrokePage() {
               <div><span style={{ color: '#81c784' }}>Fecha:</span> <b>{new Date().toLocaleDateString('es-MX')}</b></div>
             </div>
 
-            {/* Datos del jugador logueado (nombre, GHIN y score) */}
+            {/* Datos del jugador logueado (nombre, GHIN y score AJUSTADO para GHIN) */}
             {(() => {
               const match = jugadores.find(j => j.nombre.trim().toLowerCase() === usuarioLogueado)
               const idActivo = jugadorGhinId || (match ? match.id : (jugadores[0]?.id || null))
               const jugadorSel = jugadores.find(j => j.id === idActivo)
               if (!jugadorSel) return null
-              const gf = grossTramo(jugadorSel.id, front)
-              const gb = grossTramo(jugadorSel.id, back)
+              const gf = grossAjustadoTramo(jugadorSel, front)
+              const gb = grossAjustadoTramo(jugadorSel, back)
               const gt = gf + gb
               return (
                 <div style={{ background: '#1a2e1d', borderRadius: 10, padding: '12px 14px', marginBottom: 10, border: '1px solid #2ECC7133' }}>
@@ -517,15 +533,16 @@ export default function TarjetaStrokePage() {
                   <div style={{ fontSize: 12, color: jugadorSel.ghin ? '#F39C12' : '#4a7a50', marginBottom: 8, fontWeight: 'bold' }}>
                     GHIN #: {jugadorSel.ghin ? jugadorSel.ghin : 'no registrado'}
                   </div>
+                  <div style={{ fontSize: 10, color: '#81c784', marginBottom: 4, letterSpacing: 1 }}>SCORE AJUSTADO (WHS) PARA REPORTAR</div>
                   <div style={{ fontSize: 12, color: '#81c784', marginBottom: 6 }}>
                     Front 9: <b style={{ color: '#e8f5e9' }}>{gf}</b> &nbsp; Back 9: <b style={{ color: '#e8f5e9' }}>{gb}</b> &nbsp; Total: <b style={{ color: '#2ECC71' }}>{gt}</b>
                   </div>
                   <div style={{ fontSize: 11, color: '#e8f5e9', lineHeight: 1.7 }}>
                     {hoyos.map(h => {
-                      const g = getScore(jugadorSel.id, h.hole_number)
+                      const a = grossAjustadoHoyo(jugadorSel, h)
                       return (
                         <span key={h.hole_number} style={{ display: 'inline-block', minWidth: 34, marginRight: 2 }}>
-                          <span style={{ color: '#4a7a50' }}>H{h.hole_number}:</span> {g !== '' ? g : '-'}
+                          <span style={{ color: '#4a7a50' }}>H{h.hole_number}:</span> {a !== '' ? a : '-'}
                         </span>
                       )
                     })}
