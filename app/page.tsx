@@ -213,6 +213,9 @@ export default function Home() {
                 <li>Elige <b style={{ color: '#F39C12' }}>Agregar a pantalla principal</b></li>
                 <li>Confirma. Listo, ya tienes el ícono.</li>
               </ol>
+              <div style={{ fontSize: 11.5, color: '#F39C12', fontWeight: 'bold', marginTop: 7, paddingTop: 7, borderTop: '1px solid #2ECC7122' }}>
+                La liga: kriter-golf-club.vercel.app
+              </div>
             </div>
 
             {/* IPHONE */}
@@ -224,6 +227,9 @@ export default function Home() {
                 <li>Baja y elige <b style={{ color: '#F39C12' }}>Agregar a inicio</b></li>
                 <li>Confirma. Listo, ya tienes el ícono.</li>
               </ol>
+              <div style={{ fontSize: 11.5, color: '#F39C12', fontWeight: 'bold', marginTop: 7, paddingTop: 7, borderTop: '1px solid #2ECC7122' }}>
+                La liga: kriter-golf-club.vercel.app
+              </div>
             </div>
 
             <button onClick={() => setPanelInstalar(false)} style={{
