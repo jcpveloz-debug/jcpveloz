@@ -87,7 +87,7 @@ export default function RegistroPage() {
 
         {/* Cerrar / volver */}
         <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '20px 0 0' }}>
-          <button onClick={() => window.location.href = '/planes'} style={{
+          <button onClick={() => window.location.href = '/'} style={{
             background: 'transparent', border: '1px solid #2ECC7144', color: '#81c784',
             borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia, serif',
           }}>&#8592; Volver</button>
