@@ -78,6 +78,10 @@ export default function DashboardPage() {
             Kriter Golf Club
           </div>
           <div style={{ fontSize: 20, fontWeight: 'bold' }}>Dashboard</div>
+          <button onClick={() => window.location.href = '/'} style={{
+            background: 'transparent', border: 'none', color: '#81c784', padding: '4px 0 0',
+            cursor: 'pointer', fontSize: 11, fontFamily: 'Georgia, serif', textDecoration: 'underline',
+          }}>&#8592; Regresar</button>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={compartirWhatsApp} style={{
