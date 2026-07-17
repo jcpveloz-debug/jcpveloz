@@ -41,6 +41,10 @@ export default function NuevoJuegoPage() {
   const [buscaFB, setBuscaFB] = useState('')
   const [buscaStroke, setBuscaStroke] = useState('')
 
+  // Crear jugador individual al vuelo
+  const [nuevoHcp, setNuevoHcp] = useState('')
+  const [creandoJugador, setCreandoJugador] = useState(false)
+
   // Crear grupo al vuelo
   const [grpNombre, setGrpNombre] = useState('')
   const [grpHcp, setGrpHcp] = useState('')
@@ -130,6 +134,33 @@ export default function NuevoJuegoPage() {
     return jugadores.filter(j =>
       j.golf_name.toLowerCase().includes(t) && !(j.integrantes && j.integrantes.trim() !== '')
     )
+  }
+
+  // Crear un jugador al vuelo: se guarda en players y se agrega al juego
+  async function crearJugadorAlVuelo() {
+    const nom = buscaStroke.trim()
+    if (!nom) return
+    const hcpNum = nuevoHcp === '' ? 0 : Number(nuevoHcp)
+    if (isNaN(hcpNum)) { alert('El HCP debe ser un numero (ej. 12.5).'); return }
+    setCreandoJugador(true)
+    try {
+      const { data, error } = await supabase.from('players').insert({
+        golf_name: nom,
+        hcp_base: hcpNum,
+        active: true,
+      }).select().single()
+      if (error) throw error
+      if (data) {
+        setJugadores(prev => [...prev, data as Jugador])
+        setSeleccionadosStroke(prev => [...prev, data.id])
+      }
+      setBuscaStroke('')
+      setNuevoHcp('')
+    } catch (err: any) {
+      alert('Error al crear el jugador: ' + (err?.message || err))
+    } finally {
+      setCreandoJugador(false)
+    }
   }
 
   // Crear un grupo al vuelo: se guarda en players (con integrantes) y se agrega al torneo
@@ -559,12 +590,40 @@ export default function NuevoJuegoPage() {
                         Elegidos: {seleccionadosStroke.map(id => nombre(id)).join(', ')}
                       </div>
                     )}
+                    {/* No hay coincidencias: crear jugador al vuelo */}
+                    {buscaStroke.trim() !== '' && filtrar(buscaStroke).length === 0 && (
+                      <div style={{ background: '#0d2410', borderRadius: 10, padding: '12px 14px', border: '1px dashed #F39C1266', marginBottom: 10 }}>
+                        <div style={{ fontSize: 12, color: '#81c784', marginBottom: 8 }}>
+                          No encontramos a <b style={{ color: '#e8f5e9' }}>{buscaStroke.trim()}</b>. Agregalo al vuelo:
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input
+                            type="number" step="0.1" inputMode="decimal"
+                            value={nuevoHcp} onChange={e => setNuevoHcp(e.target.value)}
+                            placeholder="HCP"
+                            style={{
+                              width: 80, background: '#0a1a0f', border: '1px solid #2ECC7144', borderRadius: 8,
+                              padding: '10px 12px', color: '#e8f5e9', fontFamily: 'Georgia, serif', fontSize: 14,
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                          <button onClick={crearJugadorAlVuelo} disabled={creandoJugador} style={{
+                            flex: 1, background: creandoJugador ? '#4a7a50' : '#F39C12', color: '#0a1a0f', border: 'none',
+                            borderRadius: 8, padding: '10px', cursor: creandoJugador ? 'not-allowed' : 'pointer',
+                            fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
+                          }}>
+                            {creandoJugador ? 'Agregando...' : '+ Agregar a ' + buscaStroke.trim()}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {filtrar(buscaStroke).map(j => {
                         const sel = seleccionadosStroke.includes(j.id)
                         const bloqueado = !sel && seleccionadosStroke.length >= 8
                         return (
-                          <div key={j.id} onClick={() => toggleStroke(j.id)} style={{
+                          <div key={j.id} onClick={() => { toggleStroke(j.id); setBuscaStroke('') }} style={{
                             padding: '10px 14px', borderRadius: 8, cursor: bloqueado ? 'not-allowed' : 'pointer',
                             background: sel ? '#2ECC7122' : '#0d2410',
                             border: `1px solid ${sel ? '#2ECC71' : '#2ECC7133'}`,
