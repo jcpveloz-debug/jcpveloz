@@ -2,7 +2,7 @@
   "name": "Kriter Golf Club",
   "short_name": "Kriter Golf Club",
   "description": "Plataforma de scoring de golf: Match Play, Stroke Play, Stableford y más.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0a1a0f",
   "theme_color": "#2ECC71",
