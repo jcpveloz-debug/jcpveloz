@@ -43,6 +43,8 @@ export default function NuevoJuegoPage() {
 
   // HCP corregido para ESTA ronda (no toca el registro base). Clave: id del jugador
   const [hcpRonda, setHcpRonda] = useState<Record<string, number>>({})
+  // Texto que se ve en el input del HCP mientras se edita (permite borrar libremente)
+  const [hcpTexto, setHcpTexto] = useState<Record<string, string>>({})
 
   // Crear jugador individual al vuelo
   const [nuevoHcp, setNuevoHcp] = useState('')
@@ -248,14 +250,27 @@ export default function NuevoJuegoPage() {
     return enGrupos?.hcp_base ?? 0
   }
 
-  function setHcpRondaDe(id: string, valor: string) {
-    if (valor === '') {
-      setHcpRonda(prev => { const n = { ...prev }; delete n[id]; return n })
-      return
-    }
+  // Texto visible del input: si hay edicion en curso usa ese texto, si no, el HCP actual
+  function hcpTextoDe(id: string): string {
+    if (hcpTexto[id] !== undefined) return hcpTexto[id]
+    return String(hcpDe(id))
+  }
+  // Mientras escribe: guarda el texto tal cual (permite vacio) y actualiza el numero si es valido
+  function onCambiaHcp(id: string, valor: string) {
+    setHcpTexto(prev => ({ ...prev, [id]: valor }))
+    if (valor === '' || valor === '.' || valor === '-') return
     const num = Number(valor)
-    if (isNaN(num)) return
-    setHcpRonda(prev => ({ ...prev, [id]: num }))
+    if (!isNaN(num)) {
+      setHcpRonda(prev => ({ ...prev, [id]: num }))
+    }
+  }
+  // Al salir del campo: si quedo vacio, vuelve al HCP base
+  function onSaleHcp(id: string) {
+    const t = hcpTexto[id]
+    if (t === '' || t === undefined || isNaN(Number(t))) {
+      setHcpRonda(prev => { const n = { ...prev }; delete n[id]; return n })
+      setHcpTexto(prev => { const n = { ...prev }; delete n[id]; return n })
+    }
   }
 
   async function handleArrancar() {
@@ -611,9 +626,11 @@ export default function NuevoJuegoPage() {
                               <span style={{ flex: 1, fontSize: 14, color: '#e8f5e9' }}>{nombre(id)}</span>
                               <span style={{ fontSize: 11, color: '#81c784' }}>HCP</span>
                               <input
-                                type="number" step="0.1" inputMode="decimal"
-                                value={hcpDe(id)}
-                                onChange={e => setHcpRondaDe(id, e.target.value)}
+                                type="text" inputMode="decimal"
+                                value={hcpTextoDe(id)}
+                                onChange={e => onCambiaHcp(id, e.target.value)}
+                                onBlur={() => onSaleHcp(id)}
+                                onFocus={e => e.target.select()}
                                 style={{
                                   width: 64, background: '#0a1a0f', border: '1px solid #2ECC7144',
                                   borderRadius: 6, padding: '6px 8px', color: '#F39C12', fontWeight: 'bold',
