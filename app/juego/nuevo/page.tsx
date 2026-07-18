@@ -41,6 +41,9 @@ export default function NuevoJuegoPage() {
   const [buscaFB, setBuscaFB] = useState('')
   const [buscaStroke, setBuscaStroke] = useState('')
 
+  // HCP corregido para ESTA ronda (no toca el registro base). Clave: id del jugador
+  const [hcpRonda, setHcpRonda] = useState<Record<string, number>>({})
+
   // Crear jugador individual al vuelo
   const [nuevoHcp, setNuevoHcp] = useState('')
   const [creandoJugador, setCreandoJugador] = useState(false)
@@ -238,10 +241,21 @@ export default function NuevoJuegoPage() {
     return enGrupos?.golf_name || ''
   }
   function hcpDe(id: string | null) {
+    if (id && hcpRonda[id] !== undefined) return hcpRonda[id]
     const enBase = jugadores.find(j => j.id === id)
     if (enBase) return enBase.hcp_base ?? 0
     const enGrupos = gruposCreados.find(g => g.id === id)
     return enGrupos?.hcp_base ?? 0
+  }
+
+  function setHcpRondaDe(id: string, valor: string) {
+    if (valor === '') {
+      setHcpRonda(prev => { const n = { ...prev }; delete n[id]; return n })
+      return
+    }
+    const num = Number(valor)
+    if (isNaN(num)) return
+    setHcpRonda(prev => ({ ...prev, [id]: num }))
   }
 
   async function handleArrancar() {
@@ -586,8 +600,33 @@ export default function NuevoJuegoPage() {
                     </div>
                     <input value={buscaStroke} onChange={e => setBuscaStroke(e.target.value)} placeholder="Escribe un nombre para buscar..." style={inputBusca} />
                     {seleccionadosStroke.length > 0 && (
-                      <div style={{ fontSize: 12, color: '#81c784', marginBottom: 10 }}>
-                        Elegidos: {seleccionadosStroke.map(id => nombre(id)).join(', ')}
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>ELEGIDOS &mdash; revisa el HCP antes de iniciar</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {seleccionadosStroke.map(id => (
+                            <div key={id} style={{
+                              display: 'flex', alignItems: 'center', gap: 8, background: '#0d2410',
+                              borderRadius: 8, padding: '8px 10px', border: '1px solid #2ECC7133',
+                            }}>
+                              <span style={{ flex: 1, fontSize: 14, color: '#e8f5e9' }}>{nombre(id)}</span>
+                              <span style={{ fontSize: 11, color: '#81c784' }}>HCP</span>
+                              <input
+                                type="number" step="0.1" inputMode="decimal"
+                                value={hcpDe(id)}
+                                onChange={e => setHcpRondaDe(id, e.target.value)}
+                                style={{
+                                  width: 64, background: '#0a1a0f', border: '1px solid #2ECC7144',
+                                  borderRadius: 6, padding: '6px 8px', color: '#F39C12', fontWeight: 'bold',
+                                  fontFamily: 'Georgia, serif', fontSize: 14, textAlign: 'center', boxSizing: 'border-box',
+                                }}
+                              />
+                              <button onClick={() => toggleStroke(id)} style={{
+                                background: 'transparent', border: 'none', color: '#e74c3c',
+                                cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 4px',
+                              }}>&times;</button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {/* No hay coincidencias: crear jugador al vuelo */}
