@@ -62,6 +62,8 @@ export default function TarjetaStrokePage() {
   const [nombreCampo, setNombreCampo] = useState('')
   const [slopeCampo, setSlopeCampo] = useState<number | null>(null)
   const [ratingCampo, setRatingCampo] = useState<number | null>(null)
+  const [tees, setTees] = useState<{ tee_name: string; slope: number; rating: number }[]>([])
+  const [teeSel, setTeeSel] = useState<string>('')
   const [panelGhin, setPanelGhin] = useState(false)
   const [jugadorGhinId, setJugadorGhinId] = useState<string | null>(null)
   const [usuarioLogueado, setUsuarioLogueado] = useState<string>('')
@@ -100,6 +102,14 @@ export default function TarjetaStrokePage() {
       setNombreCampo(cData?.name || '')
       setSlopeCampo(cData?.slope ?? null)
       setRatingCampo(cData?.rating ?? null)
+
+      // tees del campo (para el reporte GHIN)
+      const { data: teeData } = await supabase
+        .from('course_tees')
+        .select('tee_name, slope, rating')
+        .eq('course_id', cursoDelJuego)
+        .order('orden')
+      setTees(teeData || [])
 
       const { data: hData } = await supabase
         .from('course_holes')
@@ -149,6 +159,11 @@ export default function TarjetaStrokePage() {
   }, [])
 
   const adminSuffix = esAdmin ? '&admin=1' : ''
+
+  // rating/slope efectivos: del tee elegido si hay, si no del campo
+  const teeElegido = tees.find(t => t.tee_name === teeSel)
+  const ratingEf = teeElegido ? teeElegido.rating : ratingCampo
+  const slopeEf = teeElegido ? teeElegido.slope : slopeCampo
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a1a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2ECC71', fontFamily: 'Georgia, serif', fontSize: 18 }}>
@@ -296,8 +311,8 @@ export default function TarjetaStrokePage() {
     const gt = gf + gb
 
     let texto = 'DATOS PARA GHIN\n\n'
-    texto += 'Campo: ' + nombreCampo + '\n'
-    texto += 'Rating: ' + (ratingCampo !== null ? ratingCampo : '-') + '  Slope: ' + (slopeCampo !== null ? slopeCampo : '-') + '\n'
+    texto += 'Campo: ' + nombreCampo + (teeSel ? ' (' + teeSel + ')' : '') + '\n'
+    texto += 'Rating: ' + (ratingEf !== null ? ratingEf : '-') + '  Slope: ' + (slopeEf !== null ? slopeEf : '-') + '\n'
     texto += 'Fecha: ' + new Date().toLocaleDateString('es-MX') + '\n\n'
     texto += 'Jugador: ' + jugadorSel.nombre + '\n'
     texto += 'GHIN #: ' + (jugadorSel.ghin ? jugadorSel.ghin : 'no registrado') + '\n'
@@ -511,10 +526,27 @@ export default function TarjetaStrokePage() {
               <div style={{ fontSize: 11, color: '#81c784', marginTop: 3 }}>Usa estos datos para registrar tu score en la app de GHIN</div>
             </div>
 
+            {/* Selector de TEE DE SALIDA */}
+            {tees.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 6, letterSpacing: 1 }}>TEE DE SALIDA</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {tees.map(t => (
+                    <button key={t.tee_name} onClick={() => setTeeSel(t.tee_name === teeSel ? '' : t.tee_name)} style={{
+                      padding: '7px 13px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 12,
+                      background: teeSel === t.tee_name ? '#2ECC71' : 'transparent',
+                      color: teeSel === t.tee_name ? '#0a1a0f' : '#2ECC71', border: '1px solid #2ECC71',
+                      fontWeight: teeSel === t.tee_name ? 'bold' : 'normal',
+                    }}>{t.tee_name}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Datos del campo */}
             <div style={{ background: '#0d2410', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-              <div style={{ marginBottom: 4 }}><span style={{ color: '#81c784' }}>Campo:</span> <b>{nombreCampo}</b></div>
-              <div style={{ marginBottom: 4 }}><span style={{ color: '#81c784' }}>Rating:</span> <b>{ratingCampo !== null ? ratingCampo : '-'}</b> &nbsp; <span style={{ color: '#81c784' }}>Slope:</span> <b>{slopeCampo !== null ? slopeCampo : '-'}</b></div>
+              <div style={{ marginBottom: 4 }}><span style={{ color: '#81c784' }}>Campo:</span> <b>{nombreCampo}</b>{teeSel ? <span style={{ color: '#F39C12' }}> &middot; {teeSel}</span> : null}</div>
+              <div style={{ marginBottom: 4 }}><span style={{ color: '#81c784' }}>Rating:</span> <b>{ratingEf !== null ? ratingEf : '-'}</b> &nbsp; <span style={{ color: '#81c784' }}>Slope:</span> <b>{slopeEf !== null ? slopeEf : '-'}</b></div>
               <div><span style={{ color: '#81c784' }}>Fecha:</span> <b>{new Date().toLocaleDateString('es-MX')}</b></div>
             </div>
 
