@@ -52,6 +52,7 @@ function leerGameId(): string | null {
 export default function TarjetaStrokePage() {
   const [gameId, setGameId] = useState<string | null>(null)
   const [esAdmin, setEsAdmin] = useState(false)
+  const [clubId, setClubId] = useState<string | null>(null)
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
   const [scores, setScores] = useState<Record<string, Record<number, string>>>({})
@@ -86,12 +87,15 @@ export default function TarjetaStrokePage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
-      const { data: rondaData } = await supabase
+const { data: rondaData } = await supabase
         .from('game_rounds')
-        .select('course_id')
+        .select('course_id, club_id')
         .eq('id', id)
         .single()
-      const cursoDelJuego = rondaData?.course_id || COURSE_ID
+
+      setClubId(rondaData?.club_id || null)
+      const cursoDelJuego = rondaData?.course_id
+      if (!cursoDelJuego) { setLoading(false); return }
 
       // nombre, slope y rating del campo (para compartir y GHIN)
       const { data: cData } = await supabase
@@ -203,7 +207,7 @@ export default function TarjetaStrokePage() {
       const { error } = await supabase.from('hole_scores').upsert({
         game_round_id: gameId,
         player_id: jid,
-        club_id: CLUB_ID,
+        club_id: clubId,
         hole_number: hole,
         par: h.par,
         si: h.si,
