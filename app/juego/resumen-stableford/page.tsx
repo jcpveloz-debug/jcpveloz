@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const COURSE_ID = '92b555b3-cba3-4d0c-84fd-b1d2720f1f07'
+// 🔧 Se elimina el COURSE_ID fijo. El campo ahora se lee del juego.
 
 interface Jugador {
   id: string
@@ -31,6 +31,7 @@ function leerGameId(): string | null {
 
 export default function ResumenStablefordPage() {
   const [gameId, setGameId] = useState<string | null>(null)
+  const [clubName, setClubName] = useState('') // 🔧 nombre del club dinámico
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
   const [scores, setScores] = useState<Record<string, Record<number, string>>>({})
@@ -42,10 +43,29 @@ export default function ResumenStablefordPage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
+      // 🔧 1. Leer el juego para saber en qué campo se jugó
+      const { data: roundData } = await supabase
+        .from('game_rounds')
+        .select('course_id')
+        .eq('id', id)
+        .single()
+
+      const courseId = roundData?.course_id || null
+      if (!courseId) { setLoading(false); return }
+
+      // 🔧 2. Traer el nombre real del club de ese campo
+      const { data: courseData } = await supabase
+        .from('golf_courses')
+        .select('name')
+        .eq('id', courseId)
+        .single()
+      setClubName(courseData?.name || '')
+
+      // 🔧 3. Cargar los hoyos DEL CAMPO CORRECTO (ya no del ID fijo)
       const { data: hData } = await supabase
         .from('course_holes')
         .select('hole_number, par, si')
-        .eq('course_id', COURSE_ID)
+        .eq('course_id', courseId)
         .order('hole_number')
       setHoyos(hData || [])
 
@@ -131,7 +151,7 @@ export default function ResumenStablefordPage() {
 
       <div style={{ padding: '20px 16px 60px' }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: '#81c784', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
-          Stableford — Club Las Misiones
+          Stableford{clubName ? ` — ${clubName}` : ''}
         </div>
 
         {/* Podio (top 3) */}
