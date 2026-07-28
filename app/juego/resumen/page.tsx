@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const COURSE_ID = '92b555b3-cba3-4d0c-84fd-b1d2720f1f07'
+// 🔧 Se elimina el COURSE_ID fijo. El campo ahora se lee del juego.
 
 interface Jugador { id: string; nombre: string; hcp: number; team: string }
 interface Hoyo { hole_number: number; par: number; si: number }
@@ -25,6 +25,7 @@ const COLOR2 = '#3498DB'
 
 export default function ResumenSinglesPage() {
   const [gameId, setGameId] = useState<string | null>(null)
+  const [clubName, setClubName] = useState('') // 🔧 nombre del club dinámico
   const [esAdmin, setEsAdmin] = useState(false)
   const [j1, setJ1] = useState<Jugador | null>(null)
   const [j2, setJ2] = useState<Jugador | null>(null)
@@ -41,10 +42,29 @@ export default function ResumenSinglesPage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
+      // 🔧 1. Leer el juego para saber en qué campo se jugó
+      const { data: roundData } = await supabase
+        .from('game_rounds')
+        .select('course_id')
+        .eq('id', id)
+        .single()
+
+      const courseId = roundData?.course_id || null
+      if (!courseId) { setLoading(false); return }
+
+      // 🔧 2. Traer el nombre real del club de ese campo
+      const { data: courseData } = await supabase
+        .from('golf_courses')
+        .select('name')
+        .eq('id', courseId)
+        .single()
+      setClubName(courseData?.name || '')
+
+      // 🔧 3. Cargar los hoyos DEL CAMPO CORRECTO (ya no del ID fijo)
       const { data: hData } = await supabase
         .from('course_holes')
         .select('hole_number, par, si')
-        .eq('course_id', COURSE_ID)
+        .eq('course_id', courseId)
         .order('hole_number')
       setHoyos(hData || [])
 
@@ -146,7 +166,7 @@ export default function ResumenSinglesPage() {
         {/* Tarjeta resultado */}
         <div style={{ background: 'linear-gradient(135deg, #1a2e1d, #0d2410)', borderRadius: 16, padding: '20px', border: `1px solid ${marcadorColor}44`, marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: marcadorColor + '15', pointerEvents: 'none' }} />
-          <div style={{ fontSize: 11, letterSpacing: 3, color: '#81c784', textTransform: 'uppercase', marginBottom: 14 }}>Match Play Singles — Club Las Misiones</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: '#81c784', textTransform: 'uppercase', marginBottom: 14 }}>Match Play Singles{clubName ? ` — ${clubName}` : ''}</div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ textAlign: 'center', flex: 1 }}>
