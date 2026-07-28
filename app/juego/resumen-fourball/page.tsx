@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const COURSE_ID = '92b555b3-cba3-4d0c-84fd-b1d2720f1f07'
+// 🔧 Se elimina el COURSE_ID fijo. El campo ahora se lee del juego.
 
 interface Jugador {
   id: string
@@ -27,6 +27,7 @@ function leerGameId(): string | null {
 
 export default function ResumenFourballPage() {
   const [gameId, setGameId] = useState<string | null>(null)
+  const [clubName, setClubName] = useState('') // 🔧 nombre del club dinámico
   const [jugadores, setJugadores] = useState<Jugador[]>([])
   const [hoyos, setHoyos] = useState<Hoyo[]>([])
   const [scores, setScores] = useState<Record<string, Record<number, number>>>({})
@@ -38,10 +39,29 @@ export default function ResumenFourballPage() {
     async function cargar() {
       if (!id) { setLoading(false); return }
 
+      // 🔧 1. Leer el juego para saber en qué campo se jugó
+      const { data: roundData } = await supabase
+        .from('game_rounds')
+        .select('course_id')
+        .eq('id', id)
+        .single()
+
+      const courseId = roundData?.course_id || null
+      if (!courseId) { setLoading(false); return }
+
+      // 🔧 2. Traer el nombre real del club de ese campo
+      const { data: courseData } = await supabase
+        .from('golf_courses')
+        .select('name')
+        .eq('id', courseId)
+        .single()
+      setClubName(courseData?.name || '')
+
+      // 🔧 3. Cargar los hoyos DEL CAMPO CORRECTO (ya no del ID fijo)
       const { data: hData } = await supabase
         .from('course_holes')
         .select('hole_number, par, si')
-        .eq('course_id', COURSE_ID)
+        .eq('course_id', courseId)
         .order('hole_number')
       const holes = hData || []
       setHoyos(holes)
@@ -154,7 +174,7 @@ export default function ResumenFourballPage() {
         {/* Tarjeta resultado */}
         <div style={{ background: 'linear-gradient(135deg, #1a2e1d, #0d2410)', borderRadius: 16, padding: '20px', border: `1px solid ${marcadorColor}44`, marginBottom: 16 }}>
           <div style={{ fontSize: 11, letterSpacing: 3, color: '#81c784', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
-            Fourball — Club Las Misiones
+            Fourball{clubName ? ` — ${clubName}` : ''}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ textAlign: 'center', flex: 1 }}>
