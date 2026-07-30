@@ -416,9 +416,31 @@ export default function NuevoJuegoPage() {
               </div>
             </div>
 
-            {/* FORMATO */}
+{/* FORMATO */}
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7122', marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: '#81c784', marginBottom: 8 }}>FORMATO</div>
+
+              {/* Fila 1: Stroke Play | Bola Baja */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div onClick={() => setFormato('stroke_play')} style={{
+                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                  background: formato === 'stroke_play' ? '#2ECC7122' : '#0d2410',
+                  border: `2px solid ${formato === 'stroke_play' ? '#2ECC71' : '#2ECC7133'}`,
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
+                  <div style={{ fontSize: 11, color: '#81c784' }}>Individual o Grupos</div>
+                </div>
+                <div onClick={() => window.location.href = '/juego/bola-baja' + adminSuffix} style={{
+                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                  background: '#0d2410',
+                  border: '2px solid #2ECC7133',
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Bola Baja</div>
+                  <div style={{ fontSize: 11, color: '#81c784' }}>En Parejas</div>
+                </div>
+              </div>
+
+              {/* Fila 2: Match Play | Stableford */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <div onClick={() => setFormato('match_singles')} style={{
                   flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
@@ -427,24 +449,6 @@ export default function NuevoJuegoPage() {
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Match Play</div>
                   <div style={{ fontSize: 11, color: '#81c784' }}>Singles (1 vs 1)</div>
-                </div>
-                <div onClick={() => setFormato('match_fourball')} style={{
-                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
-                  background: formato === 'match_fourball' ? '#2ECC7122' : '#0d2410',
-                  border: `2px solid ${formato === 'match_fourball' ? '#2ECC71' : '#2ECC7133'}`,
-                }}>
-                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Fourball</div>
-                  <div style={{ fontSize: 11, color: '#81c784' }}>Parejas (2 vs 2)</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div onClick={() => setFormato('stroke_play')} style={{
-                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
-                  background: formato === 'stroke_play' ? '#2ECC7122' : '#0d2410',
-                  border: `2px solid ${formato === 'stroke_play' ? '#2ECC71' : '#2ECC7133'}`,
-                }}>
-                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Stroke Play</div>
-                  <div style={{ fontSize: 11, color: '#81c784' }}>Individual o Grupos</div>
                 </div>
                 <div onClick={() => setFormato('stableford')} style={{
                   flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
@@ -456,17 +460,18 @@ export default function NuevoJuegoPage() {
                 </div>
               </div>
 
-              <div style={{ margin: '14px 0 0', paddingTop: 14, borderTop: '1px solid #2ECC7122' }}>
-                <div style={{ fontSize: 10, color: '#81c784', marginBottom: 8, letterSpacing: 1 }}>O TORNEO DE PAREJAS</div>
-                <button onClick={() => window.location.href = '/juego/bola-baja' + adminSuffix} style={{
-                  width: '100%', background: 'transparent', color: '#F39C12', border: '1px solid #F39C12',
-                  borderRadius: 10, padding: '12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 13, fontWeight: 'bold',
+              {/* Fila 3: Fourball */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div onClick={() => setFormato('match_fourball')} style={{
+                  flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                  background: formato === 'match_fourball' ? '#2ECC7122' : '#0d2410',
+                  border: `2px solid ${formato === 'match_fourball' ? '#2ECC71' : '#2ECC7133'}`,
                 }}>
-                  Bola Baja en Parejas
-                </button>
+                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#2ECC71' }}>Fourball</div>
+                  <div style={{ fontSize: 11, color: '#81c784' }}>Parejas (2 vs 2)</div>
+                </div>
               </div>
             </div>
-
             {/* TIPO */}
             <div style={{ background: '#1a2e1d', borderRadius: 12, padding: '16px', border: '1px solid #2ECC7122', marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: '#81c784', marginBottom: 8 }}>TIPO</div>
